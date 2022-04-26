@@ -18,7 +18,7 @@ class BreakageDetailsScreen extends StatelessWidget {
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Устранено',
+        child: const Text('Устранено'),
         onPressed: () {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

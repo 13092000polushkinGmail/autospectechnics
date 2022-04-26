@@ -20,42 +20,81 @@ class VehicleFormMainInfoWidget extends StatelessWidget {
         title: 'Основная информация',
         hasBackButton: true,
       ),
-      body: ListView(
-        padding:
-            const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-        children: [
-          const VehicleStepperWidget(),
-          const SizedBox(height: 32),
-          const AddingPhotoWidget(width: 328, height: 192),
-          const SizedBox(height: 32),
-          TextFieldTemplateWidget(
-            controller: model.modelTextControler,
-            hintText: 'Марка и модель',
-          ),
-          const SizedBox(height: 16),
-          TextFieldTemplateWidget(
-            controller: model.yearTextControler,
-            hintText: 'Год выпуска',
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 16),
-          TextFieldTemplateWidget(
-            controller: model.mileageTextControler,
-            hintText: 'Пробег',
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 16),
-          TextFieldTemplateWidget(
-            controller: model.informationTextControler,
-            hintText: 'Дополнительная информация',
-          ),
-        ],
-      ),
+      body: _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Далее',
-        onPressed: () => model.incrementCurrentTabIndex(),
+        child: const Text('Сохранить'),
+        onPressed: () => model.saveToDatabase(context),
       ),
+      //TODO Временно заменил эту кнопку, чтобы проверить, как сохраняется транспортное средство
+      // floatingActionButton: FloatingButtonWidget(
+      //   child: const Text('Далее'),
+      //   onPressed: () => model.incrementCurrentTabIndex(),
+      // ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
+  }
+}
+
+class _BodyWidget extends StatelessWidget {
+  const _BodyWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.read<AddingVehicleViewModel>();
+    return ListView(
+      padding:
+          const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
+      children: [
+        const VehicleStepperWidget(),
+        const SizedBox(height: 32),
+        const _PhotoWidget(),
+        const SizedBox(height: 32),
+        TextFieldTemplateWidget(
+          controller: model.modelTextControler,
+          hintText: 'Марка и модель',
+        ),
+        const SizedBox(height: 16),
+        TextFieldTemplateWidget(
+          controller: model.mileageTextControler,
+          hintText: 'Пробег',
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 16),
+        TextFieldTemplateWidget(
+          controller: model.licensePlateTextControler,
+          hintText: 'Гос. номер',
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 16),
+        TextFieldTemplateWidget(
+          controller: model.descriptionTextControler,
+          hintText: 'Дополнительная информация',
+        ),
+      ],
+    );
+  }
+}
+
+class _PhotoWidget extends StatelessWidget {
+  const _PhotoWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.watch<AddingVehicleViewModel>();
+    final image = model.image;
+    return image == null
+        ? AddingPhotoWidget(
+            width: 328,
+            height: 192,
+            onTap: () => model.pickImage(context: context),
+          )
+        : SizedBox(
+            height: 192,
+            child: image,
+          );
   }
 }

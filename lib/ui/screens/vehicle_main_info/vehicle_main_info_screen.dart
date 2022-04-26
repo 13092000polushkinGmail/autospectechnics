@@ -20,7 +20,7 @@ class VehicleMainInfoScreen extends StatelessWidget {
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Редактировать',
+        child: const Text('Редактировать'),
         onPressed: () {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

@@ -26,7 +26,7 @@ class ObjectFormMainInfoWidget extends StatelessWidget {
         children: [
           const ObjectStepperWidget(),
           const SizedBox(height: 32),
-          const AddingPhotoWidget(width: 328, height: 192),
+          AddingPhotoWidget(width: 328, height: 192, onTap: () {}),
           const SizedBox(height: 32),
           TextFieldTemplateWidget(
             controller: model.startDateTextControler,
@@ -45,7 +45,7 @@ class ObjectFormMainInfoWidget extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Далее',
+        child: const Text('Далее'),
         onPressed: () => model.incrementCurrentTabIndex(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

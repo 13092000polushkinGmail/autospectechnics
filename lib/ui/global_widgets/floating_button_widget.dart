@@ -3,19 +3,19 @@ import 'package:autospectechnics/ui/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
 class FloatingButtonWidget extends StatelessWidget {
-  final String text;
+  final Widget child;
   final void Function() onPressed;
 
   const FloatingButtonWidget({
     Key? key,
-    required this.text,
+    required this.child,
     required this.onPressed,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return OutlinedButton(
-      child: Text(text),
+      child: child,
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         primary: AppColors.white,

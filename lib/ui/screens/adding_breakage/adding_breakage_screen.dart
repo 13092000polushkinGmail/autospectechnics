@@ -21,7 +21,7 @@ class AddingBreakageScreen extends StatelessWidget {
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Сохранить',
+        child: const Text('Сохранить'),
         onPressed: () {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -44,7 +44,7 @@ class _BodyWidget extends StatelessWidget {
           text: 'В каком узле поломка?',
         ),
         const SizedBox(height: 16),
-        const VehicleNodePickerWidget(),
+        // TODO const VehicleNodePickerWidget(),
         const SizedBox(height: 24),
         TextFieldTemplateWidget(
           controller: model.nameTextControler,
@@ -57,7 +57,7 @@ class _BodyWidget extends StatelessWidget {
           maxLines: 5,
         ),
         const SizedBox(height: 16),
-        const AddingPhotoWidget(width: 116, height: 80),
+        AddingPhotoWidget(width: 116, height: 80, onTap: () {}),
       ],
     );
   }

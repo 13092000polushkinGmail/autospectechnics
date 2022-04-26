@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
+//TODO Переделать в соотвествии с выбором узла автомиобиля из добавления рекомендации
 class VehicleTypePickerWidget extends StatelessWidget {
   const VehicleTypePickerWidget({
     Key? key,
@@ -95,7 +96,7 @@ class VehicleTypePickerWidget extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Далее',
+        child: const Text('Далее'),
         onPressed: () => model.incrementCurrentTabIndex(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

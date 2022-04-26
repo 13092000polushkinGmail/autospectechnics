@@ -1,21 +1,18 @@
-import 'package:autospectechnics/resources/resources.dart';
-import 'package:autospectechnics/ui/theme/app_colors.dart';
-import 'package:autospectechnics/ui/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-enum NodeType {
-  engine,
-  bodywork,
-  transmission,
-  chassis,
-  technicalLiquids,
-  otherNodes
-}
+import 'package:autospectechnics/resources/resources.dart';
+import 'package:autospectechnics/ui/theme/app_colors.dart';
+import 'package:autospectechnics/ui/theme/app_text_styles.dart';
 
-//TODO Реализовать перекрашивание выбранных квадратиков
 class VehicleNodePickerWidget extends StatelessWidget {
-  const VehicleNodePickerWidget({Key? key}) : super(key: key);
+  final void Function(int index) onVehicleNodeTapSelectIndex;
+  final int selectedIndex;
+  const VehicleNodePickerWidget({
+    Key? key,
+    required this.onVehicleNodeTapSelectIndex,
+    required this.selectedIndex,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -23,42 +20,67 @@ class VehicleNodePickerWidget extends StatelessWidget {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: const [
+          children: [
             _NodeWidget(
-              iconName: AppSvgs.engine,
-              title: 'ДВС',
-              color: AppColors.greyText,
+              configuration: NodeWidgetConfiguration(
+                iconName: AppSvgs.engine,
+                title: 'ДВС',
+                currentVehicleNodeIndex: 0,
+                selectedVehicleNodeIndex: selectedIndex,
+                //TODO Может быть передавать немного по-другому, как еще не придумал
+                onTap: () => onVehicleNodeTapSelectIndex(0),
+              ),
             ),
             _NodeWidget(
-              iconName: AppSvgs.bodywork,
-              title: 'Кузов',
-              color: AppColors.blue,
+              configuration: NodeWidgetConfiguration(
+                iconName: AppSvgs.bodywork,
+                title: 'Кузов',
+                 currentVehicleNodeIndex: 1,
+                selectedVehicleNodeIndex: selectedIndex,
+                onTap: () => onVehicleNodeTapSelectIndex(1),
+              ),
             ),
             _NodeWidget(
-              iconName: AppSvgs.transmission,
-              title: 'КПП',
-              color: AppColors.greyText,
+              configuration: NodeWidgetConfiguration(
+                iconName: AppSvgs.transmission,
+                title: 'КПП',
+                 currentVehicleNodeIndex: 2,
+                selectedVehicleNodeIndex: selectedIndex,
+                onTap: () => onVehicleNodeTapSelectIndex(2),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: const [
+          children: [
             _NodeWidget(
-              iconName: AppSvgs.chassis,
-              title: 'Ходовая',
-              color: AppColors.greyText,
+              configuration: NodeWidgetConfiguration(
+                iconName: AppSvgs.chassis,
+                title: 'Ходовая',
+                 currentVehicleNodeIndex: 3,
+                selectedVehicleNodeIndex: selectedIndex,
+                onTap: () => onVehicleNodeTapSelectIndex(3),
+              ),
             ),
             _NodeWidget(
-              iconName: AppSvgs.technicalLiquids,
-              title: 'Жидкости',
-              color: AppColors.greyText,
+              configuration: NodeWidgetConfiguration(
+                iconName: AppSvgs.technicalLiquids,
+                title: 'Жидкости',
+                 currentVehicleNodeIndex: 4,
+                selectedVehicleNodeIndex: selectedIndex,
+                onTap: () => onVehicleNodeTapSelectIndex(4),
+              ),
             ),
             _NodeWidget(
-              iconName: AppSvgs.otherNodes,
-              title: 'Прочие',
-              color: AppColors.greyText,
+              configuration: NodeWidgetConfiguration(
+                iconName: AppSvgs.otherNodes,
+                title: 'Прочие',
+                 currentVehicleNodeIndex: 5,
+                selectedVehicleNodeIndex: selectedIndex,
+                onTap: () => onVehicleNodeTapSelectIndex(5),
+              ),
             ),
           ],
         ),
@@ -68,49 +90,69 @@ class VehicleNodePickerWidget extends StatelessWidget {
 }
 
 class _NodeWidget extends StatelessWidget {
-  final String iconName;
-  final String title;
-  //TODO Цвет брать в зависимости от того выбрана карточка или нет, не передавать явно
-  final Color color;
+  final NodeWidgetConfiguration configuration;
   const _NodeWidget({
     Key? key,
-    required this.iconName,
-    required this.title,
-    required this.color,
+    required this.configuration,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: color,
-            //TODO Ширину рамки брать в зависимости от того выбрана карточка или нет
-            width: color == AppColors.blue ? 1.5 : 1.0,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: AppColors.white,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              iconName,
-              color: color,
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: configuration.onTap,
+      child: SizedBox(
+        width: 80,
+        height: 80,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: configuration.color,
+              width: configuration.borderWidth,
             ),
-            Text(
-              title,
-              style: AppTextStyles.hint.copyWith(
-                color: color,
+            borderRadius: BorderRadius.circular(12),
+            color: AppColors.white,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset(
+                configuration.iconName,
+                color: configuration.color,
               ),
-              textAlign: TextAlign.center,
-            )
-          ],
+              Text(
+                configuration.title,
+                style: AppTextStyles.hint.copyWith(
+                  color: configuration.color,
+                ),
+                textAlign: TextAlign.center,
+              )
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class NodeWidgetConfiguration {
+  final String iconName;
+  final String title;
+  final int currentVehicleNodeIndex;
+  final int selectedVehicleNodeIndex;
+  final void Function() onTap;
+
+  NodeWidgetConfiguration({
+    required this.iconName,
+    required this.title,
+    required this.currentVehicleNodeIndex,
+    required this.selectedVehicleNodeIndex,
+    required this.onTap,
+  });
+
+  bool get _isSelected => currentVehicleNodeIndex == selectedVehicleNodeIndex;
+
+  Color get color => _isSelected ? AppColors.blue : AppColors.greyText;
+
+  double get borderWidth => _isSelected ? 1.5 : 1.0;
 }

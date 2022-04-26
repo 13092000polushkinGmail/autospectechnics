@@ -1,4 +1,8 @@
-import 'package:autospectechnics/resources/resources.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+
+import 'package:autospectechnics/domain/entities/routine_maintenance.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/remaining_resource_progress_bar_widget.dart';
@@ -6,31 +10,10 @@ import 'package:autospectechnics/ui/screens/routine_maintenance/routine_maintena
 import 'package:autospectechnics/ui/theme/app_box_decorations.dart';
 import 'package:autospectechnics/ui/theme/app_colors.dart';
 import 'package:autospectechnics/ui/theme/app_text_styles.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
 
-class Item {
-  Item({
-    required this.expandedValue,
-    required this.headerValue,
-    this.isExpanded = false,
-  });
-
-  String expandedValue;
-  String headerValue;
-  bool isExpanded;
-}
-
-class RoutineMaintenanceScreen extends StatefulWidget {
+class RoutineMaintenanceScreen extends StatelessWidget {
   const RoutineMaintenanceScreen({Key? key}) : super(key: key);
 
-  @override
-  _RoutineMaintenanceScreenState createState() =>
-      _RoutineMaintenanceScreenState();
-}
-
-class _RoutineMaintenanceScreenState extends State<RoutineMaintenanceScreen> {
   @override
   Widget build(BuildContext context) {
     final model = context.read<RoutineMaintenanceViewModel>();
@@ -39,19 +22,9 @@ class _RoutineMaintenanceScreenState extends State<RoutineMaintenanceScreen> {
         title: 'ТО',
         hasBackButton: true,
       ),
-      body: ListView(
-        padding:
-            const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-        children: const [
-          _VehicleNodeWidget(),
-          SizedBox(height: 16),
-          _VehicleNodeWidget(),
-          SizedBox(height: 16),
-          _VehicleNodeWidget(),
-        ],
-      ),
+      body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Записать моточасы и пробег',
+        child: const Text('Записать моточасы и пробег'),
         onPressed: () => model.openWritingEngineHoursScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -59,8 +32,35 @@ class _RoutineMaintenanceScreenState extends State<RoutineMaintenanceScreen> {
   }
 }
 
+class _BodyWidget extends StatelessWidget {
+  const _BodyWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.watch<RoutineMaintenanceViewModel>();
+    final vehicleNodeDataList = model.vehicleNodeDataList;
+    return model.isDataLoading
+        ? const Center(child: CircularProgressIndicator())
+        : ListView.separated(
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
+            itemCount: vehicleNodeDataList.length,
+            itemBuilder: (_, index) =>
+                _VehicleNodeWidget(vehicleNodeDataIndex: index),
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+          );
+  }
+}
+
 class _VehicleNodeWidget extends StatefulWidget {
-  const _VehicleNodeWidget({Key? key}) : super(key: key);
+  final int vehicleNodeDataIndex;
+
+  const _VehicleNodeWidget({
+    Key? key,
+    required this.vehicleNodeDataIndex,
+  }) : super(key: key);
 
   @override
   State<_VehicleNodeWidget> createState() => __VehicleNodeWidgetState();
@@ -86,7 +86,6 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
   }
 
   void _toggleContainer() {
-    // print(_animation.status);
     if (_animation.status != AnimationStatus.completed) {
       _controller.forward();
       setState(() {
@@ -102,6 +101,12 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
 
   @override
   Widget build(BuildContext context) {
+    final model = context.watch<RoutineMaintenanceViewModel>();
+    final vehicleNodeDataList = model.vehicleNodeDataList;
+    final headerConfiguration =
+        vehicleNodeDataList[widget.vehicleNodeDataIndex].headerConfiguration;
+    final routineMaintenanceList =
+        vehicleNodeDataList[widget.vehicleNodeDataIndex].routineMaintenanceList;
     return DecoratedBox(
       decoration: AppBoxDecorations.cardBoxDecoration,
       child: Padding(
@@ -110,20 +115,23 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
           children: [
             InkWell(
               onTap: () => _toggleContainer(),
-              child: _VehicleNodeHeaderWidget(isActive: _isActive),
+              child: _VehicleNodeHeaderWidget(
+                isActive: _isActive,
+                configuration: headerConfiguration,
+              ),
             ),
             SizeTransition(
               sizeFactor: _animation,
               axis: Axis.vertical,
-              child: Column(
-                children: const [
-                  SizedBox(height: 8),
-                  _WorkInfoWidget(),
-                  SizedBox(height: 8),
-                  _WorkInfoWidget(),
-                  SizedBox(height: 8),
-                  _WorkInfoWidget(),
-                ],
+              child: ListView.separated(
+                itemCount: routineMaintenanceList.length,
+                itemBuilder: (_, index) => _WorkInfoWidget(
+                  vehicleNodeDataIndex: widget.vehicleNodeDataIndex,
+                  routineMaintenanceIndex: index,
+                ),
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
               ),
             ),
           ],
@@ -135,10 +143,12 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
 
 class _VehicleNodeHeaderWidget extends StatelessWidget {
   final bool isActive;
+  final VehicleNodeHeaderWidgetConfiguration configuration;
 
   const _VehicleNodeHeaderWidget({
     Key? key,
     required this.isActive,
+    required this.configuration,
   }) : super(key: key);
 
   @override
@@ -150,13 +160,13 @@ class _VehicleNodeHeaderWidget extends StatelessWidget {
     return Row(
       children: [
         SvgPicture.asset(
-          AppSvgs.engine,
+          configuration.iconName,
           color: color,
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
-            'ДВС',
+            configuration.title,
             style: AppTextStyles.regular20.copyWith(
               color: color,
             ),
@@ -173,12 +183,28 @@ class _VehicleNodeHeaderWidget extends StatelessWidget {
 }
 
 class _WorkInfoWidget extends StatelessWidget {
+  final int vehicleNodeDataIndex;
+  final int routineMaintenanceIndex;
+
   const _WorkInfoWidget({
     Key? key,
+    required this.vehicleNodeDataIndex,
+    required this.routineMaintenanceIndex,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final model = context.watch<RoutineMaintenanceViewModel>();
+    final vehicleNodeDataList = model.vehicleNodeDataList;
+    final routineMaintenanceList =
+        vehicleNodeDataList[vehicleNodeDataIndex].routineMaintenanceList;
+    final routineMaintenance = routineMaintenanceList[routineMaintenanceIndex];
+    final isRoutineMaintenanceUpdating = context.select(
+        (RoutineMaintenanceViewModel vm) => vm.isRoutineMaintenanceUpdating);
+    final engineHoursReserve =
+        routineMaintenance.periodicity - routineMaintenance.engineHoursValue;
+    final progressIndicatorValue = 1 -
+        routineMaintenance.engineHoursValue / routineMaintenance.periodicity;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -187,28 +213,34 @@ class _WorkInfoWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Моторное масло',
+                routineMaintenance.title,
                 style: AppTextStyles.regular16.copyWith(
                   color: AppColors.black,
                 ),
               ),
               Text(
-                'Осталось 125 мч',
+                'Осталось $engineHoursReserve/${routineMaintenance.periodicity} мч',
                 style: AppTextStyles.hint.copyWith(
                   color: AppColors.greyText,
                 ),
               ),
               const SizedBox(height: 4),
-              const RemainingResourceProgressBarWidget(
-                color: AppColors.green,
-                value: 0.8,
+              RemainingResourceProgressBarWidget(
+                value: progressIndicatorValue,
               ),
             ],
           ),
         ),
         OutlinedButton(
-          onPressed: () {},
-          child: const Icon(Icons.refresh),
+          onPressed: () => model.resetEngineHoursValue(
+            objectId: routineMaintenance.objectId,
+            vehicleNodeDataIndex: vehicleNodeDataIndex,
+            routineMaintenanceIndex: routineMaintenanceIndex,
+          ),
+          //TODO Применяется ко всем кнопкам обновления, они крутятся одновременно, подумать, как исправить
+          child: isRoutineMaintenanceUpdating
+              ? const CircularProgressIndicator()
+              : const Icon(Icons.refresh),
           style: OutlinedButton.styleFrom(
             backgroundColor: AppColors.blue,
             fixedSize: const Size(40, 40),

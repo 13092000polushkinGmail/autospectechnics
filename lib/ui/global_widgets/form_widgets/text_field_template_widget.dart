@@ -19,6 +19,7 @@ class TextFieldTemplateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: controller,
       style: AppTextStyles.regular16.copyWith(color: AppColors.black),
       decoration: InputDecoration(
         enabledBorder: OutlineInputBorder(

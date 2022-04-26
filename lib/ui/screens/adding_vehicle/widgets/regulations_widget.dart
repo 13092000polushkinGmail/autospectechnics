@@ -86,7 +86,7 @@ class _RegulationsWidgetState extends State<RegulationsWidget>
         ],
       ),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Далее',
+        child: const Text('Далее'),
         onPressed: () => model.incrementCurrentTabIndex(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

@@ -30,7 +30,7 @@ class VehiclesParkWidget extends StatelessWidget {
             const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
       ),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Добавить авто',
+        child: const Text('Добавить авто'),
         onPressed: () => model.openAddingVehicleScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -113,7 +113,6 @@ class _VehicleInfoWidget extends StatelessWidget {
                       ),
                     ),
                     const RemainingResourceProgressBarWidget(
-                      color: AppColors.yellow,
                       value: 0.5,
                     ),
                     Text(

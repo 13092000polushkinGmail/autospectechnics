@@ -51,7 +51,7 @@ class ObjectMainInfoScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Редактировать',
+        child: const Text('Редактировать'),
         onPressed: () {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

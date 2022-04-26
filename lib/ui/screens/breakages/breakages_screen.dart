@@ -22,7 +22,7 @@ class BreakagesScreen extends StatelessWidget {
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Добавить поломку',
+        child: const Text('Добавить поломку'),
         onPressed: () => model.openAddingBreakageScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

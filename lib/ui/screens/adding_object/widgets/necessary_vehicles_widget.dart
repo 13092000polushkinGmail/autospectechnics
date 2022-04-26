@@ -41,7 +41,7 @@ class NecessaryVehiclesWidget extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Далее',
+        child: const Text('Далее'),
         onPressed: () => model.incrementCurrentTabIndex(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

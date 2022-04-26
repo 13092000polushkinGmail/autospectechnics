@@ -22,7 +22,7 @@ class RepairHistoryScreen extends StatelessWidget {
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Добавить работу',
+        child: const Text('Добавить работу'),
         onPressed: () => model.openAddingCompletedRepairScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

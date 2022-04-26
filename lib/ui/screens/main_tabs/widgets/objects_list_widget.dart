@@ -37,7 +37,7 @@ class ObjectsListWidget extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Добавить объект',
+        child: const Text('Добавить объект'),
         onPressed: () => model.openAddingObjectScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

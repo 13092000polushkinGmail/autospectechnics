@@ -22,7 +22,7 @@ class RecommendationsScreen extends StatelessWidget {
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Добавить рекомендацию',
+        child: const Text('Добавить рекомендацию'),
         onPressed: () => model.openAddingRecommendationScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

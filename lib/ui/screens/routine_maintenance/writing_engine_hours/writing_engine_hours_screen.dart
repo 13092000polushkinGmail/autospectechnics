@@ -13,13 +13,13 @@ class WritingEngineHoursScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(
+      appBar: const AppBarWidget(
         title: 'Запись моточасов',
         hasBackButton: true,
       ),
-      body: _BodyWidget(),
+      body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        text: 'Сохранить',
+        child: const Text('Сохранить'),
         onPressed: () {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
