@@ -36,7 +36,7 @@ import 'package:provider/provider.dart';
 class ScreenFactory {
   Widget makeMainTabs() {
     return ChangeNotifierProvider(
-      create: (_) => MainTabsViewModel(),
+      create: (context) => MainTabsViewModel(context),
       child: const MainTabsScreen(),
     );
   }
@@ -48,9 +48,9 @@ class ScreenFactory {
     );
   }
 
-  Widget makeVehicleMainInfo() {
+  Widget makeVehicleMainInfo(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => VehicleMainInfoViewModel(),
+      create: (_) => VehicleMainInfoViewModel(vehicleObjectId),
       child: const VehicleMainInfoScreen(),
     );
   }
@@ -76,7 +76,7 @@ class ScreenFactory {
     );
   }
 
-   Widget makeBreakages() {
+  Widget makeBreakages() {
     return ChangeNotifierProvider(
       create: (_) => BreakagesViewModel(),
       child: const BreakagesScreen(),

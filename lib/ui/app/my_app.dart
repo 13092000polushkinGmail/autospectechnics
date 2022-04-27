@@ -32,6 +32,7 @@ class MyApp extends StatelessWidget {
       ),
       routes: mainNavigation.routes,
       initialRoute: MainNavigationRouteNames.mainTabsScreen,
+      onGenerateRoute: mainNavigation.onGenerateRoute,
     );
   }
 }

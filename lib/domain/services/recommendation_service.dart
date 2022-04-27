@@ -55,28 +55,4 @@ class RecommendationService {
       );
     }
   }
-
-  // Future<void> getRecommendation() async {
-  //   QueryBuilder<ParseObject> queryRecommendation =
-  //       QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.recommendation))
-  //         ..whereEqualTo('objectId', 'nUDxAWJ8mw');
-
-  //   final ParseResponse responseRecommendation = await queryRecommendation.query();
-
-  //   if (responseRecommendation.success && responseRecommendation.results != null) {
-  //     final recommendation = (responseRecommendation.results?.first) as ParseObject;
-  //   }
-
-  //   QueryBuilder<ParseObject> queryAuthors =
-  //       QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.image))
-  //         ..whereRelatedTo('photos', 'Recommendation', 'nUDxAWJ8mw');
-
-  //   final ParseResponse responseAuthors = await queryAuthors.query();
-
-  //   if (responseAuthors.success && responseAuthors.results != null) {
-  //     final bookAuthors = responseAuthors.results;
-  //         // .map((e) => (e as ParseObject).get<String>('name'))
-  //         // .toList();
-  //   }
-  // }
 }

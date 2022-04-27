@@ -31,7 +31,6 @@ class MainNavigation {
   final routes = <String, Widget Function(BuildContext)>{
     MainNavigationRouteNames.mainTabsScreen: (_) => _screenFactory.makeMainTabs(),
     MainNavigationRouteNames.addingVehicleScreen: (_) => _screenFactory.makeAddingVehicle(),
-    MainNavigationRouteNames.vehicleMainInfoScreen: (_) => _screenFactory.makeVehicleMainInfo(),
     
     MainNavigationRouteNames.recommendationsScreen: (_) => _screenFactory.makeRecommendations(),
     MainNavigationRouteNames.recommendationDetailsScreen: (_) => _screenFactory.makeRecommendationDetails(),
@@ -52,23 +51,23 @@ class MainNavigation {
     MainNavigationRouteNames.addingObjectScreen: (_) => _screenFactory.makeAddingObject(),
   };
 
-  // Route<Object> onGenerateRoute(RouteSettings settings) {
-  //   switch (settings.name) {
-      //     case MainNavigationRouteNames.movieDetails:
-      //       final arguments = settings.arguments;
-      //       final movieId = arguments is int ? arguments : 0;
-      //       return MaterialPageRoute(
-      //         builder: (_) => _screenFactory.makeMovieDetails(movieId),
-      //       );
-      //     case MainNavigationRouteNames.movieTrailerWidget:
-      //       final arguments = settings.arguments;
-      //       final youtubeKey = arguments is String ? arguments : '';
-      //       return MaterialPageRoute(
-      //         builder: (_) => _screenFactory.makeMovieTrailer(youtubeKey),
-      //       );
-  //     default:
-  //       const widget = Text('Navigation error!!!');
-  //       return MaterialPageRoute(builder: (_) => widget);
-  //   }
-  // }
+  Route<Object> onGenerateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case MainNavigationRouteNames.vehicleMainInfoScreen:
+        final arguments = settings.arguments;
+        final vehicleObjectId = arguments is String ? arguments : '';
+        return MaterialPageRoute(
+          builder: (_) => _screenFactory.makeVehicleMainInfo(vehicleObjectId),
+        );
+      // case MainNavigationRouteNames.movieTrailerWidget:
+      //   final arguments = settings.arguments;
+      //   final youtubeKey = arguments is String ? arguments : '';
+      //   return MaterialPageRoute(
+      //     builder: (_) => _screenFactory.makeMovieTrailer(youtubeKey),
+      //   );
+      default:
+        const widget = Text('Ошибка навигации, пожалуйста перезапустите приложение.');
+        return MaterialPageRoute(builder: (_) => widget);
+    }
+  }
 }

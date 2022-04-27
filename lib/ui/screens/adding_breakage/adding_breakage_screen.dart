@@ -3,9 +3,7 @@ import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_photo_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/header_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/text_field_template_widget.dart';
-import 'package:autospectechnics/ui/global_widgets/form_widgets/vehicle_node_picker_widget.dart';
 import 'package:autospectechnics/ui/screens/adding_breakage/adding_breakage_view_model.dart';
-import 'package:autospectechnics/ui/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class ErrorDialogWidget {
-  //TODO Вместо вывода текста ошибки в виджет, сделать такое окно универсальным
   ErrorDialogWidget.showConnectionError(BuildContext context) {
     _showErrorDialogWidget(
       context: context,

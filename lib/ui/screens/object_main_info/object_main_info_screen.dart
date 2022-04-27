@@ -75,7 +75,7 @@ class _VehicleWidget extends StatelessWidget {
             Padding(
               padding: EdgeInsets.only(
                   left: 1, bottom: 1, top: 1), //Отступы, чтобы было видно рамку
-              child: ImageWidget(imageName: AppImages.valdai),
+              // TODO Закомментировал потому что подключил сервер и теперь нужно вбивать адрес картинкиchild: ImageWidget(imageName: AppImages.valdai),
             ),
             SizedBox(width: 16),
             Expanded(child: _VehicleInfoWidget()),

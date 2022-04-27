@@ -1,6 +1,7 @@
 import 'package:autospectechnics/domain/api_clients/images_api_client.dart';
 import 'package:autospectechnics/domain/api_clients/photos_to_entity_adding_relation_api_client.dart';
 import 'package:autospectechnics/domain/api_clients/vehicle_api_client.dart';
+import 'package:autospectechnics/domain/entities/vehicle.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -29,5 +30,10 @@ class VehicleService {
           entityObjectId: _vehicleApiClient.vehicleObjectId,
           imageObjectId: _imagesApiClient.savedImagesObjectIds[0]);
     }
+  }
+
+  Future<List<Vehicle>> getAllVehicles() async {
+    final vehiclesList = await _vehicleApiClient.getAllVehicles();
+    return vehiclesList;
   }
 }
