@@ -1,6 +1,4 @@
-import 'dart:io';
-
-import 'package:autospectechnics/domain/exceptions/parse_exception.dart';
+import 'package:autospectechnics/domain/api_clients/api_response_success_checker.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
@@ -20,16 +18,7 @@ class PhotosToEntityAddingRelationApiClient {
             .toList());
 
     final ParseResponse apiResponse = await entity.save();
-
-    if (apiResponse.success && apiResponse.results != null) {
-      return;
-    } else if (apiResponse.error?.exception is SocketException) {
-      throw const SocketException('Проверьте подключение к интернету');
-    } else {
-      throw ParseException(
-          message: apiResponse.error?.message ??
-              'Неизвестная ошибка. Пожалуйста, повторите попытку.');
-    }
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
   }
 
   Future<void> addPhotoPointerToEntity({
@@ -45,15 +34,6 @@ class PhotosToEntityAddingRelationApiClient {
             .toPointer());
 
     final ParseResponse apiResponse = await entity.save();
-
-    if (apiResponse.success && apiResponse.results != null) {
-      return;
-    } else if (apiResponse.error?.exception is SocketException) {
-      throw const SocketException('Проверьте подключение к интернету');
-    } else {
-      throw ParseException(
-          message: apiResponse.error?.message ??
-              'Неизвестная ошибка. Пожалуйста, повторите попытку.');
-    }
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
   }
 }

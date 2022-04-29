@@ -1,4 +1,3 @@
-import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/remaining_resource_progress_bar_widget.dart';
@@ -11,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-//TODO Продолжить работу над отображением и загрузкой, проверить оптимизацию подключения картинок и текста, сделать прогресс индикатор пока грузятся данные
+//TODO Попробовать кэшировать данные и в тайне от пользователя сверять с базой данных при входе, если будут различия, обновлять страницу
 class VehiclesParkWidget extends StatelessWidget {
   const VehiclesParkWidget({Key? key}) : super(key: key);
 
@@ -43,12 +42,12 @@ class _BodyWidget extends StatelessWidget {
     final model = context.read<MainTabsViewModel>();
     final isLoadingProgress =
         context.select((MainTabsViewModel vm) => vm.isLoadingProgress);
-    final vehiclesList =
-        context.select((MainTabsViewModel vm) => vm.vehiclesList);
+    final vehiclesList = context
+        .select((MainTabsViewModel vm) => vm.vehiclesWidgetConfigurationList);
     return isLoadingProgress
         ? const Center(child: CircularProgressIndicator())
         : vehiclesList.isEmpty
-            //TODO Временная мера, в идеале сообщать, что пошло не так и в зависимости от этого возвращать подходящее предложение: обновить страницу (в случае с ощибкой), добавить автомобиль в случае если автопарк пуст и тд
+            //TODO Временная мера, в идеале сообщать, что пошло не так и в зависимости от этого возвращать подходящее предложение: обновить страницу (в случае с ошибкой), добавить автомобиль в случае если автопарк пуст и тд
             ? Center(
                 child: TextButton(
                   child: const Text('Обновить страницу'),
@@ -75,9 +74,8 @@ class _VehicleWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.read<MainTabsViewModel>();
-    final vehicle =
-        context.select((MainTabsViewModel vm) => vm.vehiclesList[index]);
-    final vehicleImageURL = vehicle.image?.fileURL;
+    final vehicleWidgetConfiguration = context.select(
+        (MainTabsViewModel vm) => vm.vehiclesWidgetConfigurationList[index]);
     return InkWell(
       //TODO Как-то передавать индекс в функцию
       onTap: () => model.openVehicleInfoScreen(context, index),
@@ -89,7 +87,8 @@ class _VehicleWidget extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(
                   left: 1, bottom: 1, top: 1), //Отступы, чтобы было видно рамку
-              child: ImageWidget(url: vehicleImageURL),
+              child:
+                  ImageWidget(url: vehicleWidgetConfiguration.vehicleImageURL),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -111,15 +110,16 @@ class _VehicleInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vehicle =
-        context.select((MainTabsViewModel vm) => vm.vehiclesList[index]);
+    final vehicleWidgetConfiguration = context.select(
+        (MainTabsViewModel vm) => vm.vehiclesWidgetConfigurationList[index]);
+    final progressBarValue = vehicleWidgetConfiguration.progressBarValue;
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 16, right: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            vehicle.model,
+            vehicleWidgetConfiguration.model,
             style: AppTextStyles.semiBold.copyWith(
               color: AppColors.black,
             ),
@@ -134,9 +134,9 @@ class _VehicleInfoWidget extends StatelessWidget {
             children: [
               Column(
                 children: [
-                  SvgPicture.asset(AppSvgs.minorBreakage),
+                  SvgPicture.asset(vehicleWidgetConfiguration.breakageIcon),
                   Text(
-                    'Поломки',
+                    'Статус',
                     style: AppTextStyles.hint.copyWith(
                       color: AppColors.black,
                     ),
@@ -145,25 +145,33 @@ class _VehicleInfoWidget extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      '25 м.ч.',
-                      style: AppTextStyles.regular16.copyWith(
-                        color: AppColors.black,
+                child: progressBarValue == null
+                    ? Text(
+                        'Регламенты не заданы',
+                        style: AppTextStyles.hint.copyWith(
+                          color: AppColors.black,
+                        ),
+                        textAlign: TextAlign.center,
+                      )
+                    : Column(
+                        children: [
+                          Text(
+                            '${vehicleWidgetConfiguration.remainingEngineHours} м.ч.',
+                            style: AppTextStyles.regular16.copyWith(
+                              color: AppColors.black,
+                            ),
+                          ),
+                          RemainingResourceProgressBarWidget(
+                            value: progressBarValue,
+                          ),
+                          Text(
+                            'Ближайшая работа',
+                            style: AppTextStyles.hint.copyWith(
+                              color: AppColors.black,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const RemainingResourceProgressBarWidget(
-                      value: 0.5,
-                    ),
-                    Text(
-                      'Ближайшая работа',
-                      style: AppTextStyles.hint.copyWith(
-                        color: AppColors.black,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),

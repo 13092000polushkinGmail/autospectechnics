@@ -1,40 +1,47 @@
-import 'package:autospectechnics/domain/entities/image_parse.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
 class Vehicle {
   final String objectId;
   final String model;
-  final int mileage;
-  final String? licensePlate;
-  final String? description;
-  final ImageParse? image;
+  final int breakageDangerLevel;
+  final RoutineMaintenanceHoursInfo? hoursInfo;
+  final String? imageURL;
   Vehicle({
     required this.objectId,
     required this.model,
-    required this.mileage,
-    this.licensePlate,
-    this.description,
-    this.image,
+    required this.breakageDangerLevel,
+    required this.hoursInfo,
+    this.imageURL,
   });
 
-  static Vehicle getVehiclefromParseObject(ParseObject vehicleParseObject) {
+  static Vehicle getVehicle({
+    required ParseObject vehicleParseObject,
+    required int breakageDangerLevel,
+    RoutineMaintenanceHoursInfo? hoursInfo,
+  }) {
     final objectId = vehicleParseObject.objectId!;
     final model = vehicleParseObject.get<String>('model')!;
-    final mileage = vehicleParseObject.get<int>('mileage')!;
-    final licensePlate = vehicleParseObject.get<String>('licensePlate');
-    final description = vehicleParseObject.get<String>('description');
     final imageParseObject = vehicleParseObject.get<ParseObject>('photo');
-    ImageParse? image;
+    String? fileURL;
     if (imageParseObject != null) {
-      image = ImageParse.getImageFromImageParseObject(imageParseObject);
+      final imageFile = imageParseObject.get<ParseFileBase>('file')!;
+      fileURL = imageFile.url!;
     }
     return Vehicle(
       objectId: objectId,
       model: model,
-      mileage: mileage,
-      licensePlate: licensePlate,
-      description: description,
-      image: image,
+      breakageDangerLevel: breakageDangerLevel,
+      imageURL: fileURL,
+      hoursInfo: hoursInfo,
     );
   }
+}
+
+class RoutineMaintenanceHoursInfo {
+  final int periodicity;
+  final int engineHoursValue;
+  RoutineMaintenanceHoursInfo({
+    required this.periodicity,
+    required this.engineHoursValue,
+  });
 }

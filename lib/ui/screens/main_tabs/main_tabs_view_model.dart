@@ -1,11 +1,11 @@
-import 'dart:io';
+import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
+import 'package:flutter/cupertino.dart';
 
 import 'package:autospectechnics/domain/entities/vehicle.dart';
-import 'package:autospectechnics/domain/exceptions/parse_exception.dart';
 import 'package:autospectechnics/domain/services/vehicle_service.dart';
+import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
 import 'package:autospectechnics/ui/navigation/main_navigation.dart';
-import 'package:flutter/cupertino.dart';
 
 class MainTabsViewModel extends ChangeNotifier {
   final _vehicleService = VehicleService();
@@ -13,6 +13,7 @@ class MainTabsViewModel extends ChangeNotifier {
   var _currentTabIndex = 0;
   bool _isLoadingProgress = false;
   List<Vehicle> _vehiclesList = [];
+  List<VehicleWidgetConfiguration> _vehiclesWidgetConfigurationList = [];
 
   MainTabsViewModel(BuildContext context) {
     getVehicles(context);
@@ -20,18 +21,31 @@ class MainTabsViewModel extends ChangeNotifier {
 
   int get currentTabIndex => _currentTabIndex;
   bool get isLoadingProgress => _isLoadingProgress;
-  List<Vehicle> get vehiclesList => _vehiclesList;
+  List<VehicleWidgetConfiguration> get vehiclesWidgetConfigurationList =>
+      _vehiclesWidgetConfigurationList;
 
   Future<void> getVehicles(BuildContext context) async {
     _isLoadingProgress = true;
     notifyListeners();
     try {
       _vehiclesList = await _vehicleService.getAllVehicles();
+      _vehiclesWidgetConfigurationList = _vehiclesList
+          .map((Vehicle vehicle) =>
+              VehicleWidgetConfiguration.getVehicleConfiguration(vehicle))
+          .toList();
       notifyListeners();
-    } on SocketException {
-      ErrorDialogWidget.showConnectionError(context);
-    } on ParseException catch (exception) {
-      ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+    } on ApiClientException catch (exception) {
+      switch (exception.type) {
+        case ApiClientExceptionType.network:
+          ErrorDialogWidget.showConnectionError(context);
+          break;
+        case ApiClientExceptionType.emptyResponse:
+          ErrorDialogWidget.showEmptyResponseError(context);
+          break;
+        case ApiClientExceptionType.other:
+          ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+          break;
+      }
     } catch (e) {
       ErrorDialogWidget.showUnknownError(context);
     }
@@ -65,5 +79,44 @@ class MainTabsViewModel extends ChangeNotifier {
   void openAddingObjectScreen(BuildContext context) {
     Navigator.of(context)
         .pushNamed(MainNavigationRouteNames.addingObjectScreen);
+  }
+}
+
+class VehicleWidgetConfiguration {
+  final String model;
+  final String breakageIcon;
+  final int? remainingEngineHours;
+  final double? progressBarValue;
+  final String? vehicleImageURL;
+  VehicleWidgetConfiguration({
+    required this.model,
+    required this.breakageIcon,
+    this.remainingEngineHours,
+    this.progressBarValue,
+    this.vehicleImageURL,
+  });
+
+  static VehicleWidgetConfiguration getVehicleConfiguration(Vehicle vehicle) {
+    String breakageIcon;
+    if (vehicle.breakageDangerLevel < 0) {
+      breakageIcon = AppSvgs.minorBreakage;
+    } else if (vehicle.breakageDangerLevel == 0) {
+      breakageIcon = AppSvgs.significantBreakage;
+    } else {
+      breakageIcon = AppSvgs.criticalBreakage;
+    }
+    int? remainingEngineHours;
+    double? progressBarValue;
+    final hoursInfo = vehicle.hoursInfo;
+    if (hoursInfo != null) {
+      remainingEngineHours = hoursInfo.periodicity - hoursInfo.engineHoursValue;
+      progressBarValue = remainingEngineHours / hoursInfo.periodicity;
+    }
+    return VehicleWidgetConfiguration(
+        model: vehicle.model,
+        breakageIcon: breakageIcon,
+        remainingEngineHours: remainingEngineHours,
+        progressBarValue: progressBarValue,
+        vehicleImageURL: vehicle.imageURL);
   }
 }

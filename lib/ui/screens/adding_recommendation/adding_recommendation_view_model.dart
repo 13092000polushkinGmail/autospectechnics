@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:autospectechnics/domain/exceptions/parse_exception.dart';
+import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/vehicle_node_names.dart';
 import 'package:autospectechnics/domain/services/recommendation_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
@@ -110,10 +110,18 @@ class AddingRecommendationViewModel extends ChangeNotifier {
           imagesList: imagesList);
       //TODO Как-то сообщать об успехе операции, возможно
       Navigator.of(context).pop();
-    } on SocketException {
-      ErrorDialogWidget.showConnectionError(context);
-    } on ParseException catch (exception) {
-      ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+    } on ApiClientException catch (exception) {
+      switch (exception.type) {
+        case ApiClientExceptionType.network:
+          ErrorDialogWidget.showConnectionError(context);
+          break;
+        case ApiClientExceptionType.emptyResponse:
+          ErrorDialogWidget.showEmptyResponseError(context);
+          break;
+        case ApiClientExceptionType.other:
+          ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+          break;
+      }
     } catch (e) {
       ErrorDialogWidget.showUnknownError(context);
     }

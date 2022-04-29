@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:autospectechnics/domain/exceptions/parse_exception.dart';
+import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/services/vehicle_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
 import 'package:autospectechnics/ui/screens/adding_vehicle/widgets/vehicle_stepper_widget.dart';
@@ -16,14 +16,14 @@ class AddingVehicleViewModel extends ChangeNotifier {
   bool _isLoadingProgress = false;
 
   bool get isLoadingProgress => _isLoadingProgress;
-  
+
   Image? get image {
     final imageFile = _imageFile;
     if (imageFile != null) {
       return kIsWeb
           ? Image.network(
               imageFile.path,
-              //TODO Обратить внимание на этот BoxFit, возможно использовать его на странице автопарка 
+              //TODO Обратить внимание на этот BoxFit, возможно использовать его на странице автопарка
               fit: BoxFit.cover,
             )
           : Image.file(
@@ -151,10 +151,18 @@ class AddingVehicleViewModel extends ChangeNotifier {
           image: image);
       //TODO Как-то сообщать об успехе операции, возможно
       Navigator.of(context).pop();
-    } on SocketException {
-      ErrorDialogWidget.showConnectionError(context);
-    } on ParseException catch (exception) {
-      ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+    } on ApiClientException catch (exception) {
+      switch (exception.type) {
+        case ApiClientExceptionType.network:
+          ErrorDialogWidget.showConnectionError(context);
+          break;
+        case ApiClientExceptionType.emptyResponse:
+          ErrorDialogWidget.showEmptyResponseError(context);
+          break;
+        case ApiClientExceptionType.other:
+          ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+          break;
+      }
     } catch (e) {
       ErrorDialogWidget.showUnknownError(context);
     }

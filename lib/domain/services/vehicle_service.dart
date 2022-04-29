@@ -33,7 +33,7 @@ class VehicleService {
   }
 
   Future<List<Vehicle>> getAllVehicles() async {
-    final vehiclesList = await _vehicleApiClient.getAllVehicles();
+    final vehiclesList = await _vehicleApiClient.getVehiclesList();
     return vehiclesList;
   }
 }

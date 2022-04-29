@@ -2,7 +2,6 @@ import 'package:autospectechnics/ui/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class ImageWidget extends StatelessWidget {
-  //final String imageName;
   final String? url;
   const ImageWidget({
     Key? key,
@@ -43,13 +42,6 @@ class ImageWidget extends StatelessWidget {
                 },
               ),
       ),
-      //TODO Вариант до подключения загрузки картинок с сервера
-      // child: Image.asset(
-      //   imageName,
-      //   height: 108,
-      //   width: 116,
-      //   fit: BoxFit.fill,
-      // ),
     );
   }
 }

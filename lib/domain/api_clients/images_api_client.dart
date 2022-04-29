@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:autospectechnics/domain/exceptions/parse_exception.dart';
+import 'package:autospectechnics/domain/api_clients/api_response_success_checker.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,16 +20,9 @@ class ImagesApiClient {
     }
 
     final ParseResponse apiResponse = await _parseFile.save();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
 
-    if (apiResponse.success && apiResponse.results != null) {
-      return ParseObject(ParseObjectNames.image)..set('file', _parseFile);
-    } else if (apiResponse.error?.exception is SocketException) {
-      throw const SocketException('Проверьте подключение к интернету');
-    } else {
-      throw ParseException(
-          message: apiResponse.error?.message ??
-              'Неизвестная ошибка. Пожалуйста, повторите попытку.');
-    }
+    return ParseObject(ParseObjectNames.image)..set('file', _parseFile);
   }
 
   Future<void> saveImagesToDatabase(List<XFile> imagesList) async {
@@ -40,16 +33,8 @@ class ImagesApiClient {
 
     for (var parseImage in _parseObjectsList) {
       final ParseResponse apiResponse = await parseImage.save();
-
-      if (apiResponse.success && apiResponse.results != null) {
-        _savedImagesObjectIds.add(parseImage.objectId!);
-      } else if (apiResponse.error?.exception is SocketException) {
-        throw const SocketException('Проверьте подключение к интернету');
-      } else {
-        throw ParseException(
-            message: apiResponse.error?.message ??
-                'Неизвестная ошибка. Пожалуйста, повторите попытку.');
-      }
+      ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+      _savedImagesObjectIds.add(parseImage.objectId!);
     }
   }
 
@@ -60,16 +45,7 @@ class ImagesApiClient {
         ..objectId = imageId;
 
       final ParseResponse apiResponse = await parseImage.delete();
-
-      if (apiResponse.success && apiResponse.results != null) {
-        return;
-      } else if (apiResponse.error?.exception is SocketException) {
-        throw const SocketException('Проверьте подключение к интернету');
-      } else {
-        throw ParseException(
-            message: apiResponse.error?.message ??
-                'Неизвестная ошибка. Пожалуйста, повторите попытку.');
-      }
+      ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
     }
   }
 

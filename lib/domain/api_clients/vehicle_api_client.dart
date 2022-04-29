@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'dart:async';
 
+import 'package:autospectechnics/domain/api_clients/api_response_success_checker.dart';
 import 'package:autospectechnics/domain/entities/vehicle.dart';
-import 'package:autospectechnics/domain/exceptions/parse_exception.dart';
+import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
@@ -28,70 +29,114 @@ class VehicleApiClient {
     }
 
     final ParseResponse apiResponse = await vehicle.save();
-
-    if (apiResponse.success && apiResponse.results != null) {
-      _vehicleObjectId = vehicle.objectId!;
-    } else if (apiResponse.error?.exception is SocketException) {
-      throw const SocketException('Проверьте подключение к интернету');
-    } else {
-      throw ParseException(
-          message: apiResponse.error?.message ??
-              'Неизвестная ошибка. Пожалуйста, повторите попытку.');
-    }
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    _vehicleObjectId = vehicle.objectId!;
   }
 
-  Future<List<Vehicle>> getAllVehicles() async {
-    // final ParseCloudFunction function = ParseCloudFunction('getListBreakages');
-    // final ParseResponse parseResponse = await function.execute();
-    // if (parseResponse.success && parseResponse.result != null) {
-    //   print(parseResponse.result);
-    //   //Use fromJson method to convert map in ParseObject
-    //   // print(ParseObject('ToDo').fromJson(todo));
-
-    // }
+  Future<List<Vehicle>> getVehiclesList() async {
+    final stopwatch = Stopwatch()..start();
 
     List<Vehicle> vehiclesList = [];
 
     QueryBuilder<ParseObject> queryVehicle =
         QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.vehicle))
+          ..keysToReturn(['model', 'photo'])
           ..orderByAscending('model')
           ..includeObject(['photo']);
 
     final ParseResponse apiResponse = await queryVehicle.query();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
 
-    if (apiResponse.success && apiResponse.results != null) {
+    if (apiResponse.results != null) {
       for (var result in apiResponse.results!) {
         final vehicleParseObject = result as ParseObject;
-        final vehicle = Vehicle.getVehiclefromParseObject(vehicleParseObject);
+
+        final breakageDangerLevel =
+            await _getBreakageLevel(vehicleParseObject.objectId!);
+
+        final routineMaintenanceHoursInfo =
+            await _getRemainEngineHours(vehicleParseObject.objectId!);
+
+        final vehicle = Vehicle.getVehicle(
+          vehicleParseObject: vehicleParseObject,
+          breakageDangerLevel: breakageDangerLevel,
+          hoursInfo: routineMaintenanceHoursInfo,
+        );
         vehiclesList.add(vehicle);
       }
+      stopwatch.stop();
+      print('EXECUTED in ${stopwatch.elapsed}');
       return vehiclesList;
-    } else if (apiResponse.error?.exception is SocketException) {
-      throw const SocketException('Проверьте подключение к интернету');
     } else {
-      throw ParseException(
-          message: apiResponse.error?.message ??
-              'Неизвестная ошибка. Пожалуйста, повторите попытку.');
+      throw ApiClientException(type: ApiClientExceptionType.emptyResponse);
     }
-    // final ParseResponse responseRecommendation =
-    //     await queryRecommendation.query();
+  }
 
-    // if (responseRecommendation.success &&
-    //     responseRecommendation.results != null) {
-    //   final recommendation =
-    //       (responseRecommendation.results?.first) as ParseObject;
+  Future<int> _getBreakageLevel(String vehicleObjectId) async {
+    //Рабочий, но не до конца протестированный вариант с исполнением кода в Cloud Code, выигрыша по времени не дает поэтому убрал как менее понятный
+    // final ParseCloudFunction function = ParseCloudFunction('getBreakageLevel');
+    // final Map<String, dynamic> params = <String, dynamic>{
+    //   'vehicleObjectId': vehicleObjectId,
+    // };
+    // final ParseResponse apiResponse =
+    //     await function.execute(parameters: params);
+    // ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+
+    // if (apiResponse.result != null) {
+    //   final result = apiResponse.result as Map<String, dynamic>;
+    //   if (result.isEmpty) return -1;
+    //   final level = apiResponse.result['dangerLevel'] as int;
+    //   return apiResponse.result['dangerLevel'] as int;
+    // } else {
+    //   return -1;
     // }
 
-    // QueryBuilder<ParseObject> queryAuthors =
-    //     QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.image))
-    //       ..whereRelatedTo('photos', 'Recommendation', 'nUDxAWJ8mw');
+    QueryBuilder<ParseObject> queryBreakage =
+        QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.breakage))
+          ..keysToReturn(['dangerLevel'])
+          ..whereEqualTo(
+              'vehicle',
+              (ParseObject(ParseObjectNames.vehicle)
+                    ..objectId = vehicleObjectId)
+                  .toPointer())
+          ..whereEqualTo("isFixed", false)
+          ..orderByDescending("dangerLevel")
+          ..setLimit(1);
 
-    // final ParseResponse responseAuthors = await queryAuthors.query();
+    final apiResponse = await queryBreakage.query();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
 
-    // if (responseAuthors.success && responseAuthors.results != null) {
-    //   final bookAuthors = responseAuthors.results;
-    //   // .map((e) => (e as ParseObject).get<String>('name'))
-    //   // .toList();
-    // }
+    if (apiResponse.results != null) {
+      final breakage = apiResponse.results!.first as ParseObject;
+      return breakage.get<int>('dangerLevel')!;
+    } else {
+      //TODO Подумать как лучше показывать, что нет неисправностей
+      return -1;
+    }
+  }
+
+  Future<RoutineMaintenanceHoursInfo?> _getRemainEngineHours(
+    String vehicleObjectId,
+  ) async {
+    QueryBuilder<ParseObject> queryRoutineMaintenance = QueryBuilder<
+        ParseObject>(ParseObject(ParseObjectNames.routineMaintenance))
+      ..keysToReturn(['periodicity', 'engineHoursValue'])
+      ..whereEqualTo(
+          'vehicle',
+          (ParseObject(ParseObjectNames.vehicle)..objectId = vehicleObjectId)
+              .toPointer())
+      ..orderByAscending("engineHoursValue")
+      ..setLimit(1);
+
+    final apiResponse = await queryRoutineMaintenance.query();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+
+    if (apiResponse.results != null) {
+      final routineMaintenance = apiResponse.results!.first as ParseObject;
+      final engineHoursValue = routineMaintenance.get<int>('engineHoursValue')!;
+      final periodicity = routineMaintenance.get<int>('periodicity')!;
+      return RoutineMaintenanceHoursInfo(
+          periodicity: periodicity, engineHoursValue: engineHoursValue);
+    }
   }
 }

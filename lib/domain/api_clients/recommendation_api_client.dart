@@ -1,6 +1,4 @@
-import 'dart:io';
-
-import 'package:autospectechnics/domain/exceptions/parse_exception.dart';
+import 'package:autospectechnics/domain/api_clients/api_response_success_checker.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
@@ -21,16 +19,8 @@ class RecommendationApiClient {
     recommendation.set('isCompleted', isCompleted);
 
     final ParseResponse apiResponse = await recommendation.save();
-
-    if (apiResponse.success && apiResponse.results != null) {
-      _recommendationObjectId = recommendation.objectId!;
-    } else if (apiResponse.error?.exception is SocketException) {
-      throw const SocketException('Проверьте подключение к интернету');
-    } else {
-      throw ParseException(
-          message: apiResponse.error?.message ??
-              'Неизвестная ошибка. Пожалуйста, повторите попытку.');
-    }
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    _recommendationObjectId = recommendation.objectId!;
   }
 
   Future<void> updateRecommendationInDatabase({
@@ -60,16 +50,8 @@ class RecommendationApiClient {
     }
 
     final ParseResponse apiResponse = await recommendation.save();
-
-    if (apiResponse.success && apiResponse.results != null) {
-      _recommendationObjectId = recommendation.objectId!;
-    } else if (apiResponse.error?.exception is SocketException) {
-      throw const SocketException('Проверьте подключение к интернету');
-    } else {
-      throw ParseException(
-          message: apiResponse.error?.message ??
-              'Неизвестная ошибка. Пожалуйста, повторите попытку.');
-    }
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    _recommendationObjectId = recommendation.objectId!;
   }
 
   // Future<void> getRecommendation() async {
