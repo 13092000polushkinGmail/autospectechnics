@@ -2,15 +2,13 @@ import 'dart:async';
 
 import 'package:autospectechnics/domain/api_clients/api_response_success_checker.dart';
 import 'package:autospectechnics/domain/entities/vehicle.dart';
+import 'package:autospectechnics/domain/entities/vehicle_details.dart';
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
 class VehicleApiClient {
-  String _vehicleObjectId = '';
-  String get vehicleObjectId => _vehicleObjectId;
-
-  Future<void> saveVehicleToDatabase({
+  Future<String?> saveVehicleToDatabase({
     required String model,
     required int mileage,
     String? licensePlate,
@@ -30,7 +28,7 @@ class VehicleApiClient {
 
     final ParseResponse apiResponse = await vehicle.save();
     ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
-    _vehicleObjectId = vehicle.objectId!;
+    return vehicle.objectId;
   }
 
   Future<List<Vehicle>> getVehiclesList() async {
@@ -124,19 +122,51 @@ class VehicleApiClient {
       ..whereEqualTo(
           'vehicle',
           (ParseObject(ParseObjectNames.vehicle)..objectId = vehicleObjectId)
-              .toPointer())
-      ..orderByAscending("engineHoursValue")
-      ..setLimit(1);
+              .toPointer());
 
     final apiResponse = await queryRoutineMaintenance.query();
     ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
 
+    //TODO Пока колхозный метод, который не сохраняет полученные данные, а потом будет грузить их по новой
+    RoutineMaintenanceHoursInfo minRemainEngineHours =
+        RoutineMaintenanceHoursInfo(periodicity: 50000, engineHoursValue: 0);
+    final apiResponseResults = apiResponse.results;
+    if (apiResponseResults != null) {
+      for (var element in apiResponseResults) {
+        final routineMaintenance = element as ParseObject;
+        final engineHoursValue =
+            routineMaintenance.get<int>('engineHoursValue');
+        final periodicity = routineMaintenance.get<int>('periodicity');
+        if (engineHoursValue != null && periodicity != null) {
+          final hoursInfo = RoutineMaintenanceHoursInfo(
+              periodicity: periodicity, engineHoursValue: engineHoursValue);
+          if (hoursInfo.remainEngineHours <
+              minRemainEngineHours.remainEngineHours) {
+            minRemainEngineHours = hoursInfo;
+          }
+        }
+      }
+      return minRemainEngineHours;
+    }
+  }
+
+  Future<VehicleDetails?> getVehicleDetails({
+    required String vehicleObjectId,
+  }) async {
+    QueryBuilder<ParseObject> queryVehicleDetails =
+        QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.vehicle))
+          ..whereEqualTo('objectId', vehicleObjectId)
+          ..includeObject(['photo']);
+
+    final apiResponse = await queryVehicleDetails.query();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+
     if (apiResponse.results != null) {
-      final routineMaintenance = apiResponse.results!.first as ParseObject;
-      final engineHoursValue = routineMaintenance.get<int>('engineHoursValue')!;
-      final periodicity = routineMaintenance.get<int>('periodicity')!;
-      return RoutineMaintenanceHoursInfo(
-          periodicity: periodicity, engineHoursValue: engineHoursValue);
+      final vehicleObject = apiResponse.results!.first as ParseObject;
+
+      final vehicleDetails =
+          VehicleDetails.getVehicleDetails(vehicleObject: vehicleObject);
+      return vehicleDetails;
     }
   }
 }

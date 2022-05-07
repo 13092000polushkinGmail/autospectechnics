@@ -2,7 +2,7 @@ import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/remaining_resource_progress_bar_widget.dart';
 import 'package:autospectechnics/ui/screens/main_tabs/main_tabs_view_model.dart';
-import 'package:autospectechnics/ui/screens/main_tabs/widgets/image_widget.dart';
+import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:autospectechnics/ui/theme/app_box_decorations.dart';
 import 'package:autospectechnics/ui/theme/app_colors.dart';
 import 'package:autospectechnics/ui/theme/app_text_styles.dart';
@@ -87,8 +87,18 @@ class _VehicleWidget extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(
                   left: 1, bottom: 1, top: 1), //Отступы, чтобы было видно рамку
-              child:
-                  ImageWidget(url: vehicleWidgetConfiguration.vehicleImageURL),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                ),
+                child: SizedBox(
+                  height: 108,
+                  width: 116,
+                  child: NetworkImageWidget(
+                      url: vehicleWidgetConfiguration.vehicleImageURL),
+                ),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(

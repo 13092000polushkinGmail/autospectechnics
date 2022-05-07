@@ -1,3 +1,5 @@
+import 'package:autospectechnics/resources/resources.dart';
+
 abstract class VehicleNodeNames {
   static const engine = 'Engine';
   static const bodywork = 'Bodywork';
@@ -23,5 +25,25 @@ abstract class VehicleNodeNames {
       default:
         return '';
     }
+  }
+
+  static String getIconName(String vehicleNode) {
+    String vehicleNodeIconName;
+    if (vehicleNode == 'Engine') {
+      vehicleNodeIconName = AppSvgs.engine;
+    } else if (vehicleNode == 'Bodywork') {
+      vehicleNodeIconName = AppSvgs.bodywork;
+    } else if (vehicleNode == 'Transmission') {
+      vehicleNodeIconName = AppSvgs.transmission;
+    } else if (vehicleNode == 'Chassis') {
+      vehicleNodeIconName = AppSvgs.chassis;
+    } else if (vehicleNode == 'Technical liquids') {
+      vehicleNodeIconName = AppSvgs.technicalLiquids;
+    } else if (vehicleNode == 'Other nodes') {
+      vehicleNodeIconName = AppSvgs.otherNodes;
+    } else {
+      vehicleNodeIconName = AppSvgs.significantBreakage;
+    }
+    return vehicleNodeIconName;
   }
 }

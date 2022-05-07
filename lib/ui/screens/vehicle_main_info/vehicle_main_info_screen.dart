@@ -1,6 +1,6 @@
-import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
+import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:autospectechnics/ui/screens/vehicle_main_info/vehicle_main_info_view_model.dart';
 import 'package:autospectechnics/ui/theme/app_box_decorations.dart';
 import 'package:autospectechnics/ui/theme/app_colors.dart';
@@ -35,74 +35,146 @@ class _BodyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final model = context.read<VehicleMainInfoViewModel>();
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 88),
-      children: [
-        Stack(
-          children: [
-            const AspectRatio(
-              aspectRatio: 1.8,
-              child: Image(
-                image: AssetImage(AppImages.a16da404c759f47c311ccb161a673ImagePicker903152841618144970),
-                alignment: Alignment.topCenter,
-                fit: BoxFit.cover,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
+    final isLoadingProgress =
+        context.select((VehicleMainInfoViewModel vm) => vm.isLoadingProgress);
+    final imageURL =
+        context.select((VehicleMainInfoViewModel vm) => vm.imageURL);
+    return isLoadingProgress
+        ? const Center(
+            child: CircularProgressIndicator(),
+          )
+        : ListView(
+            padding: const EdgeInsets.only(bottom: 88),
+            children: [
+              Stack(
                 children: [
-                  const SizedBox(height: 152),
-                  const _InfoCardWidget(
-                    title: 'Данные авто',
-                    upperLeftText: 'Мини-погрузчик',
-                    upperRightText: '2010 4.75(155 л.с.)',
-                    lowerLeftText: 'Пробег 59 000',
-                    lowerRightText: '2WD MT',
+                  AspectRatio(
+                    aspectRatio: 1.8,
+                    child: NetworkImageWidget(url: imageURL),
                   ),
-                  const SizedBox(height: 12),
-                  _InfoCardWidget(
-                    title: 'ТО',
-                    upperLeftText: 'Остаток ресурса',
-                    upperRightText: '50 м.ч.',
-                    lowerLeftText: 'Ближайшая работа',
-                    lowerRightText: 'Масло КПП',
-                    onTap: () => model.openRoutineMaintenanceScreen(context),
-                  ),
-                  const SizedBox(height: 12),
-                  _InfoCardWidget(
-                    title: 'Рекомендации',
-                    upperLeftText: 'Всего рекомендаций',
-                    upperRightText: '1',
-                    lowerLeftText: 'Последняя',
-                    lowerRightText: 'Заменить АКБ',
-                    onTap: () => model.openRecommendationsScreen(context),
-                  ),
-                  const SizedBox(height: 12),
-                  _InfoCardWidget(
-                    title: 'Поломки',
-                    upperLeftText: 'Активных поломок',
-                    upperRightText: 'Нет',
-                    lowerLeftText: 'Последняя',
-                    lowerRightText: 'Ось КПП',
-                    onTap: () => model.openBreakagesScreen(context),
-                  ),
-                  const SizedBox(height: 12),
-                  _InfoCardWidget(
-                    title: 'История работ',
-                    upperLeftText: 'Всего работ',
-                    upperRightText: '15',
-                    lowerLeftText: 'Последняя',
-                    lowerRightText: 'Масло ДВС',
-                    onTap: () => model.openHistoryScreen(context),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: const [
+                        SizedBox(height: 152),
+                        _VehicleDataWidget(),
+                        SizedBox(height: 12),
+                        _RoutineMaintenanceWidget(),
+                        SizedBox(height: 12),
+                        _RecommendationsWidget(),
+                        SizedBox(height: 12),
+                        _BreakagesWidget(),
+                        SizedBox(height: 12),
+                        _RepairHistoryWidget(),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          );
+  }
+}
+
+class _RoutineMaintenanceWidget extends StatelessWidget {
+  const _RoutineMaintenanceWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.read<VehicleMainInfoViewModel>();
+    final configuration = context.select((VehicleMainInfoViewModel vm) =>
+        vm.routineMaintenanceWidgetConfiguration);
+    return _InfoCardWidget(
+      title: 'ТО',
+      upperLeftText: configuration.upperLeftText,
+      upperRightText: configuration.remainEngineHours,
+      lowerLeftText: configuration.lowerLeftText,
+      lowerRightText: configuration.nearestRoutineMaintenance,
+      onTap: () => model.openRoutineMaintenanceScreen(context),
+    );
+  }
+}
+
+class _RepairHistoryWidget extends StatelessWidget {
+  const _RepairHistoryWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.read<VehicleMainInfoViewModel>();
+    final configuration = context.select(
+        (VehicleMainInfoViewModel vm) => vm.repairHistoryWidgetConfiguration);
+    return _InfoCardWidget(
+      title: 'История работ',
+      upperLeftText: configuration.upperLeftText,
+      upperRightText: configuration.completedRepairAmount,
+      lowerLeftText: configuration.lowerLeftText,
+      lowerRightText: configuration.lastcompletedRepairTitle,
+      onTap: () => model.openRepairHistoryScreen(context),
+    );
+  }
+}
+
+class _BreakagesWidget extends StatelessWidget {
+  const _BreakagesWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.read<VehicleMainInfoViewModel>();
+    final configuration = context.select(
+        (VehicleMainInfoViewModel vm) => vm.breakagesWidgetConfiguration);
+    return _InfoCardWidget(
+      title: 'Поломки',
+      upperLeftText: configuration.upperLeftText,
+      upperRightText: configuration.breakagesAmount,
+      lowerLeftText: configuration.lowerLeftText,
+      lowerRightText: configuration.lastBreakageTitle,
+      onTap: () => model.openBreakagesScreen(context),
+    );
+  }
+}
+
+class _RecommendationsWidget extends StatelessWidget {
+  const _RecommendationsWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.read<VehicleMainInfoViewModel>();
+    final configuration = context.select(
+        (VehicleMainInfoViewModel vm) => vm.recommendationsWidgetConfiguration);
+    return _InfoCardWidget(
+      title: 'Рекомендации',
+      upperLeftText: configuration.upperLeftText,
+      upperRightText: configuration.recommendationsAmount,
+      lowerLeftText: configuration.lowerLeftText,
+      lowerRightText: configuration.lastRecommendationTitle,
+      onTap: () => model.openRecommendationsScreen(context),
+    );
+  }
+}
+
+class _VehicleDataWidget extends StatelessWidget {
+  const _VehicleDataWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final configuration = context.select(
+        (VehicleMainInfoViewModel vm) => vm.vehicleDataWidgetConfiguration);
+    return _InfoCardWidget(
+      title: 'Данные авто',
+      upperLeftText: configuration.model,
+      upperRightText: configuration.licensePlate,
+      lowerLeftText: configuration.mileage,
+      lowerRightText: configuration.description,
     );
   }
 }
@@ -180,6 +252,8 @@ class _InfoCardWidget extends StatelessWidget {
                             lowerRightText,
                             style: AppTextStyles.hint
                                 .copyWith(color: AppColors.greyText),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

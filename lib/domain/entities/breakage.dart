@@ -1,33 +1,35 @@
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
-class Recommendation {
+class Breakage {
   final String objectId;
   final String title;
   final String vehicleNode;
+  final int dangerLevel;
   final String description;
-  final bool isCompleted;
+  final bool isFixed;
   final List<String> photosURL;
-  Recommendation({
+  Breakage({
     required this.objectId,
     required this.title,
     required this.vehicleNode,
+    required this.dangerLevel,
     required this.description,
-    required this.isCompleted,
+    required this.isFixed,
     required this.photosURL,
   });
 
-  static Recommendation getRecommendation({
-    required ParseObject recommendationObject,
+  static Breakage getBreakage({
+    required ParseObject breakageObject,
     required List<ParseObject> imagesList,
   }) {
-    final objectId = recommendationObject.objectId ?? 'Нет objectId';
-    final title =
-        recommendationObject.get<String>('title') ?? 'Название не указано';
-    final vehicleNode = recommendationObject.get<String>('vehicleNode') ??
+    final objectId = breakageObject.objectId ?? 'Нет objectId';
+    final title = breakageObject.get<String>('title') ?? 'Название не указано';
+    final vehicleNode = breakageObject.get<String>('vehicleNode') ??
         'Узел автомобиля не указан';
-    final description = recommendationObject.get<String>('description') ??
+    final dangerLevel = breakageObject.get<int>('dangerLevel') ?? -1;
+    final description = breakageObject.get<String>('description') ??
         'Описание не предоставлено';
-    final isCompleted = recommendationObject.get<bool>('isCompleted') ?? false;
+    final isFixed = breakageObject.get<bool>('isFixed') ?? false;
     List<String> photosURL = [];
     for (var imageParseObject in imagesList) {
       String? imageURL;
@@ -38,12 +40,13 @@ class Recommendation {
       }
     }
 
-    return Recommendation(
+    return Breakage(
       objectId: objectId,
       title: title,
       vehicleNode: vehicleNode,
+      dangerLevel: dangerLevel,
       description: description,
-      isCompleted: isCompleted,
+      isFixed: isFixed,
       photosURL: photosURL,
     );
   }

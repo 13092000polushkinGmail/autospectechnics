@@ -1,4 +1,3 @@
-import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/screens/breakages/breakages_view_model.dart';
@@ -37,43 +36,50 @@ class _BodyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final model = context.read<BreakagesViewModel>();
-    return ListView.separated(
-      itemCount: 10,
-      itemBuilder: (_, __) => _BreakageCardWidget(
-        onTap: () => model.openBreakageDetailsScreen(context),
-      ),
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-    );
+    final isLoadingProgress =
+        context.select((BreakagesViewModel vm) => vm.isLoadingProgress);
+    final breakageList =
+        context.select((BreakagesViewModel vm) => vm.breakageList);
+    return isLoadingProgress
+        ? const Center(child: CircularProgressIndicator())
+        : ListView.separated(
+            itemCount: breakageList.length,
+            itemBuilder: (_, index) => _BreakageCardWidget(index: index),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
+          );
   }
 }
 
 class _BreakageCardWidget extends StatelessWidget {
-  final void Function()? onTap;
+  final int index;
   const _BreakageCardWidget({
     Key? key,
-    this.onTap,
+    required this.index,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<BreakagesViewModel>();
+    final configuration = context.select((BreakagesViewModel vm) =>
+        vm.getBreakageCardWidgetConfiguration(index));
     return InkWell(
-      onTap: onTap,
+      onTap: () => model.openBreakageDetailsScreen(context, index),
       child: DecoratedBox(
         decoration: AppBoxDecorations.cardBoxDecoration,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              SvgPicture.asset(AppSvgs.chassis),
+              SvgPicture.asset(configuration.vehicleNodeIconName),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Лопнула рессора',
+                      configuration.title,
                       style: AppTextStyles.regular16.copyWith(
                         color: AppColors.black,
                       ),
@@ -84,11 +90,11 @@ class _BreakageCardWidget extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        SvgPicture.asset(AppSvgs.criticalBreakage),
+                        SvgPicture.asset(configuration.dangerLevelIconName),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Уровень: критический',
+                            configuration.dangerLevel,
                             style: AppTextStyles.hint.copyWith(
                               color: AppColors.greyText,
                             ),

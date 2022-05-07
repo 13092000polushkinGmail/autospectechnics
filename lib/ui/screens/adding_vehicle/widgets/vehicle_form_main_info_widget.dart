@@ -1,6 +1,7 @@
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_photo_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_several_photos_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/text_field_template_widget.dart';
 import 'package:autospectechnics/ui/screens/adding_vehicle/adding_vehicle_view_model.dart';
 import 'package:autospectechnics/ui/screens/adding_vehicle/widgets/vehicle_stepper_widget.dart';

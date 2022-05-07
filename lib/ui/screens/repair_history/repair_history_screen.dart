@@ -37,29 +37,35 @@ class _BodyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final model = context.read<RepairHistoryViewModel>();
-    return ListView.separated(
-      itemCount: 10,
-      itemBuilder: (_, __) => _RepairCardWidget(
-        onTap: () => model.openCompletedRepairScreen(context),
-      ),
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      padding: const EdgeInsets.all(16),
-    );
+    final isLoadingProgress =
+        context.select((RepairHistoryViewModel vm) => vm.isLoadingProgress);
+    final completedRepairList =
+        context.select((RepairHistoryViewModel vm) => vm.completedRepairList);
+    return isLoadingProgress
+        ? const Center(child: CircularProgressIndicator())
+        : ListView.separated(
+            itemCount: completedRepairList.length,
+            itemBuilder: (_, index) => _RepairCardWidget(index: index),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            padding: const EdgeInsets.all(16),
+          );
   }
 }
 
 class _RepairCardWidget extends StatelessWidget {
-  final void Function()? onTap;
+  final int index;
   const _RepairCardWidget({
     Key? key,
-    this.onTap,
+    required this.index,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<RepairHistoryViewModel>();
+    final configuration = context.select((RepairHistoryViewModel vm) =>
+        vm.getCompletedRepairCardWidgetConfiguration(index));
     return InkWell(
-      onTap: onTap,
+      onTap: () => model.openCompletedRepairScreen(context, index),
       child: DecoratedBox(
         decoration: AppBoxDecorations.cardBoxDecoration,
         child: Padding(
@@ -67,7 +73,7 @@ class _RepairCardWidget extends StatelessWidget {
           child: Row(
             children: [
               SvgPicture.asset(
-                AppSvgs.engine,
+                configuration.vehicleNodeIconName,
                 height: 40,
                 width: 40,
               ),
@@ -77,7 +83,7 @@ class _RepairCardWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Замена свечей зажигания',
+                      configuration.title,
                       style: AppTextStyles.regular16.copyWith(
                         color: AppColors.black,
                       ),
@@ -88,7 +94,7 @@ class _RepairCardWidget extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            '22.12.2020',
+                            configuration.date,
                             style: AppTextStyles.hint.copyWith(
                               color: AppColors.greyText,
                             ),
@@ -97,7 +103,7 @@ class _RepairCardWidget extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '59000 км.',
+                            configuration.mileage,
                             style: AppTextStyles.hint.copyWith(
                               color: AppColors.greyText,
                             ),

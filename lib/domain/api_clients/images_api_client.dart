@@ -7,35 +7,37 @@ import 'package:image_picker/image_picker.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
 class ImagesApiClient {
-  final List<String> _savedImagesObjectIds = [];
-  List<String> get savedImagesObjectIds => _savedImagesObjectIds;
+  
 
   Future<ParseObject> _saveImageToParseCloud(XFile imageFile) async {
-    ParseFileBase _parseFile;
+    ParseFileBase parseFile;
     if (kIsWeb) {
-      _parseFile =
+      parseFile =
           ParseWebFile(await imageFile.readAsBytes(), name: 'image.jpg');
     } else {
-      _parseFile = ParseFile(File(imageFile.path));
+      parseFile = ParseFile(File(imageFile.path));
     }
 
-    final ParseResponse apiResponse = await _parseFile.save();
+    final ParseResponse apiResponse = await parseFile.save();
     ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
 
-    return ParseObject(ParseObjectNames.image)..set('file', _parseFile);
+    return ParseObject(ParseObjectNames.image)..set('file', parseFile);
   }
 
-  Future<void> saveImagesToDatabase(List<XFile> imagesList) async {
-    List<ParseObject> _parseObjectsList = [];
+  Future<List<String>> saveImagesToDatabase(List<XFile> imagesList) async {
+    List<ParseObject> parseObjectsList = [];
     for (var image in imagesList) {
-      _parseObjectsList.add(await _saveImageToParseCloud(image));
+      parseObjectsList.add(await _saveImageToParseCloud(image));
     }
 
-    for (var parseImage in _parseObjectsList) {
+    final savedImagesObjectIds = <String>[];
+
+    for (var parseImage in parseObjectsList) {
       final ParseResponse apiResponse = await parseImage.save();
       ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
-      _savedImagesObjectIds.add(parseImage.objectId!);
+      savedImagesObjectIds.add(parseImage.objectId!);
     }
+    return savedImagesObjectIds;
   }
 
   //TODO Еще не тестировал

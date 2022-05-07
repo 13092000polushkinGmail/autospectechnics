@@ -2,6 +2,7 @@ import 'package:autospectechnics/domain/api_clients/images_api_client.dart';
 import 'package:autospectechnics/domain/api_clients/photos_to_entity_adding_relation_api_client.dart';
 import 'package:autospectechnics/domain/api_clients/vehicle_api_client.dart';
 import 'package:autospectechnics/domain/entities/vehicle.dart';
+import 'package:autospectechnics/domain/entities/vehicle_details.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -17,23 +18,32 @@ class VehicleService {
     String? description,
     XFile? image,
   }) async {
-    await _vehicleApiClient.saveVehicleToDatabase(
+    final vehicleObjectId = await _vehicleApiClient.saveVehicleToDatabase(
       model: model,
       mileage: mileage,
       licensePlate: licensePlate,
       description: description,
     );
-    if (image != null) {
-      await _imagesApiClient.saveImagesToDatabase(<XFile>[image]);
+    if (vehicleObjectId != null && image != null) {
+      final savedImagesObjectIds =
+          await _imagesApiClient.saveImagesToDatabase(<XFile>[image]);
       await _photosToEntityApiClient.addPhotoPointerToEntity(
           parseObjectName: ParseObjectNames.vehicle,
-          entityObjectId: _vehicleApiClient.vehicleObjectId,
-          imageObjectId: _imagesApiClient.savedImagesObjectIds[0]);
+          entityObjectId: vehicleObjectId,
+          imageObjectId: savedImagesObjectIds[0]);
     }
   }
 
   Future<List<Vehicle>> getAllVehicles() async {
     final vehiclesList = await _vehicleApiClient.getVehiclesList();
     return vehiclesList;
+  }
+
+  Future<VehicleDetails?> getVehicleDetails({
+    required String vehicleObjectId,
+  }) async {
+    final vehicleDetails = await _vehicleApiClient.getVehicleDetails(
+        vehicleObjectId: vehicleObjectId);
+    return vehicleDetails;
   }
 }

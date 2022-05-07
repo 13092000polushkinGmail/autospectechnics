@@ -29,10 +29,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   provider: ^6.0.2
   flutter_svg: ^1.0.3
   parse_server_sdk: ^3.1.0
   image_picker: ^0.8.5
+  cached_network_image: ^3.2.0
   # persistent_bottom_nav_bar: ^4.0.2
 
 

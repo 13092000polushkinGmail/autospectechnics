@@ -1,4 +1,5 @@
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
+import 'package:autospectechnics/domain/parse_database_string_names/breakage_danger_level.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:autospectechnics/domain/entities/vehicle.dart';
@@ -97,14 +98,8 @@ class VehicleWidgetConfiguration {
   });
 
   static VehicleWidgetConfiguration getVehicleConfiguration(Vehicle vehicle) {
-    String breakageIcon;
-    if (vehicle.breakageDangerLevel < 0) {
-      breakageIcon = AppSvgs.minorBreakage;
-    } else if (vehicle.breakageDangerLevel == 0) {
-      breakageIcon = AppSvgs.significantBreakage;
-    } else {
-      breakageIcon = AppSvgs.criticalBreakage;
-    }
+    String breakageIcon =
+        BreakageDangerLevel(vehicle.breakageDangerLevel).iconName;
     int? remainingEngineHours;
     double? progressBarValue;
     final hoursInfo = vehicle.hoursInfo;

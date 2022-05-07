@@ -3,6 +3,7 @@ import 'package:autospectechnics/ui/theme/app_colors.dart';
 import 'package:autospectechnics/ui/theme/app_font_families.dart';
 import 'package:autospectechnics/ui/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -33,6 +34,14 @@ class MyApp extends StatelessWidget {
       routes: mainNavigation.routes,
       initialRoute: MainNavigationRouteNames.mainTabsScreen,
       onGenerateRoute: mainNavigation.onGenerateRoute,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ru', ''),
+      ],
     );
   }
 }

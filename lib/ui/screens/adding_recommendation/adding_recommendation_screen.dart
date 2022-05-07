@@ -1,6 +1,6 @@
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
-import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_photo_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_several_photos_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/header_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/text_field_template_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/vehicle_node_picker_widget.dart';
@@ -45,6 +45,8 @@ class _BodyWidget extends StatelessWidget {
     final model = context.read<AddingRecommendationViewModel>();
     final selectedIndex = context.select(
         (AddingRecommendationViewModel vm) => vm.selectedVehiicleNodeIndex);
+    final imageList =
+        context.select((AddingRecommendationViewModel vm) => vm.imageList);
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
       children: [
@@ -66,37 +68,11 @@ class _BodyWidget extends StatelessWidget {
           maxLines: 5,
         ),
         const SizedBox(height: 16),
-        AddingPhotoWidget(
-          width: 120,
-          height: 120,
-          onTap: () => model.pickImage(context: context),
+        AddingSeveralPhotosWidget(
+          imageList: imageList,
+          onAddingTap: () => model.pickImage(context: context),
         ),
-        const SizedBox(height: 16),
-        const _PhotosWidget(),
       ],
     );
-  }
-}
-
-class _PhotosWidget extends StatelessWidget {
-  const _PhotosWidget({
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final model = context.watch<AddingRecommendationViewModel>();
-    final imageList = model.imageList;
-    return imageList.isEmpty
-        ? const SizedBox.shrink()
-        : SizedBox(
-            height: 160,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: imageList.length,
-              itemBuilder: (_, index) => imageList[index],
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-            ),
-          );
   }
 }

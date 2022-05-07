@@ -1,29 +1,33 @@
 import 'package:autospectechnics/domain/api_clients/api_response_success_checker.dart';
+import 'package:autospectechnics/domain/entities/recommendation.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
 class RecommendationApiClient {
-  String _recommendationObjectId = '';
-  String get recommendationObjectId => _recommendationObjectId;
-
-  Future<void> saveRecommendationToDatabase({
+  Future<String?> saveRecommendationToDatabase({
     required String title,
     required String vehicleNode,
     required String description,
     required bool isCompleted,
+    required String vehicleObjectId,
   }) async {
     var recommendation = ParseObject(ParseObjectNames.recommendation);
     recommendation.set('title', title);
     recommendation.set('vehicleNode', vehicleNode);
     recommendation.set('description', description);
     recommendation.set('isCompleted', isCompleted);
+    recommendation.set(
+        'vehicle',
+        (ParseObject(ParseObjectNames.vehicle)..objectId = vehicleObjectId)
+            .toPointer());
 
     final ParseResponse apiResponse = await recommendation.save();
     ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
-    _recommendationObjectId = recommendation.objectId!;
+    return recommendation.objectId;
   }
 
-  Future<void> updateRecommendationInDatabase({
+  //TODO Не работает для фотографий
+  Future<String?> updateRecommendationInDatabase({
     required String objectId,
     String? title,
     String? vehicleNode,
@@ -51,30 +55,84 @@ class RecommendationApiClient {
 
     final ParseResponse apiResponse = await recommendation.save();
     ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
-    _recommendationObjectId = recommendation.objectId!;
+    return recommendation.objectId;
   }
 
-  // Future<void> getRecommendation() async {
-  //   QueryBuilder<ParseObject> queryRecommendation =
-  //       QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.recommendation))
-  //         ..whereEqualTo('objectId', 'nUDxAWJ8mw');
+  Future<List<Recommendation>> getVehicleRecommendationList({
+    required String vehicleObjectId,
+  }) async {
+    final QueryBuilder<ParseObject> parseQuery =
+        QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.recommendation))
+          ..whereEqualTo(
+            'vehicle',
+            (ParseObject(ParseObjectNames.vehicle)..objectId = vehicleObjectId)
+                .toPointer(),
+          );
 
-  //   final ParseResponse responseRecommendation = await queryRecommendation.query();
+    final ParseResponse apiResponse = await parseQuery.query();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
 
-  //   if (responseRecommendation.success && responseRecommendation.results != null) {
-  //     final recommendation = (responseRecommendation.results?.first) as ParseObject;
-  //   }
+    final List<Recommendation> recommendationList = [];
 
-  //   QueryBuilder<ParseObject> queryAuthors =
-  //       QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.image))
-  //         ..whereRelatedTo('photos', 'Recommendation', 'nUDxAWJ8mw');
+    final apiResponseResults = apiResponse.results;
+    if (apiResponseResults != null) {
+      for (var element in apiResponseResults) {
+        final recommendationObject = element as ParseObject;
 
-  //   final ParseResponse responseAuthors = await queryAuthors.query();
+        final objectId = recommendationObject.objectId ?? 'Нет objectId';
+        List<ParseObject> imagesList = await _getPhotosList(objectId: objectId);
 
-  //   if (responseAuthors.success && responseAuthors.results != null) {
-  //     final bookAuthors = responseAuthors.results;
-  //         // .map((e) => (e as ParseObject).get<String>('name'))
-  //         // .toList();
-  //   }
-  // }
+        final recommendation = Recommendation.getRecommendation(
+          recommendationObject: recommendationObject,
+          imagesList: imagesList,
+        );
+        recommendationList.add(recommendation);
+      }
+    }
+    return recommendationList;
+  }
+
+  Future<Recommendation?> getRecommendation({
+    required String objectId,
+  }) async {
+    final QueryBuilder<ParseObject> parseQuery =
+        QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.recommendation))
+          ..whereEqualTo('objectId', objectId);
+
+    final ParseResponse apiResponse = await parseQuery.query();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+
+    final apiResponseResults = apiResponse.results;
+    if (apiResponseResults != null) {
+      final recommendationObject = apiResponseResults.first as ParseObject;
+      List<ParseObject> imagesList = await _getPhotosList(objectId: objectId);
+
+      final recommendation = Recommendation.getRecommendation(
+        recommendationObject: recommendationObject,
+        imagesList: imagesList,
+      );
+      return recommendation;
+    }
+  }
+
+  Future<List<ParseObject>> _getPhotosList({
+    required String objectId,
+  }) async {
+    QueryBuilder<ParseObject> queryPhotos =
+        QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.image))
+          ..whereRelatedTo(
+            'photos',
+            ParseObjectNames.recommendation,
+            objectId,
+          );
+
+    final ParseResponse responsePhotos = await queryPhotos.query();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(responsePhotos);
+
+    List<ParseObject> imagesList = [];
+    if (responsePhotos.results != null) {
+      imagesList = responsePhotos.results as List<ParseObject>;
+    }
+    return imagesList;
+  }
 }

@@ -1,7 +1,7 @@
 import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
-import 'package:autospectechnics/ui/screens/main_tabs/widgets/image_widget.dart';
+import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:autospectechnics/ui/screens/object_main_info/object_main_info_view_model.dart';
 import 'package:autospectechnics/ui/theme/app_box_decorations.dart';
 import 'package:autospectechnics/ui/theme/app_colors.dart';

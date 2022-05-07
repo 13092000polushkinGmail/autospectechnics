@@ -1,62 +1,33 @@
-import 'dart:io';
+import 'package:autospectechnics/domain/services/image_service.dart';
+import 'package:flutter/material.dart';
 
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/vehicle_node_names.dart';
 import 'package:autospectechnics/domain/services/recommendation_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 class AddingRecommendationViewModel extends ChangeNotifier {
-  final ImagePicker _imagePicker = ImagePicker();
+  final String _vehicleObjectId;
   final _recommendationService = RecommendationService();
-
-  List<XFile>? _imageFileList;
-  bool _isLoadingProgress = false;
-
-  bool get isLoadingProgress => _isLoadingProgress;
-
-  List<Image> get imageList {
-    List<Image> imageList = [];
-    final imageFileList = _imageFileList;
-    if (imageFileList != null) {
-      if (kIsWeb) {
-        for (var imageFile in imageFileList) {
-          imageList.add(Image.network(
-            imageFile.path,
-            fit: BoxFit.cover,
-          ));
-        }
-      } else {
-        for (var imageFile in imageFileList) {
-          imageList.add(Image.file(
-            File(imageFile.path),
-            fit: BoxFit.cover,
-          ));
-        }
-      }
-    }
-    return imageList;
-  }
-
-  int _selectedVehiicleNodeIndex = -1;
-  int get selectedVehiicleNodeIndex => _selectedVehiicleNodeIndex;
+  final _imageService = ImageService();
+  
+  bool isLoadingProgress = false;
+  int selectedVehiicleNodeIndex = -1;
 
   final titleTextControler = TextEditingController();
   final descriptionTextControler = TextEditingController();
 
-  void setSelectedVehiicleNodeIndex(int index) {
-    _selectedVehiicleNodeIndex = index;
-    notifyListeners();
-  }
+  AddingRecommendationViewModel(
+    this._vehicleObjectId,
+  );
+
+  List<Image> get imageList => _imageService.imageList;
 
   Future<void> pickImage({
     required BuildContext context,
   }) async {
     try {
-      _imageFileList = await _imagePicker.pickMultiImage();
+      await _imageService.pickImage();
       notifyListeners();
     } catch (e) {
       ErrorDialogWidget.showErrorWithMessage(
@@ -67,14 +38,12 @@ class AddingRecommendationViewModel extends ChangeNotifier {
   }
 
   Future<void> saveToDatabase(BuildContext context) async {
-    _isLoadingProgress = true;
-    notifyListeners();
     List<String> _errorList = [];
 
     final title = titleTextControler.text.trim();
     final description = descriptionTextControler.text.trim();
 
-    if (_selectedVehiicleNodeIndex < 0) {
+    if (selectedVehiicleNodeIndex < 0) {
       _errorList.add('Выберите узел автомобиля.');
     }
 
@@ -87,8 +56,6 @@ class AddingRecommendationViewModel extends ChangeNotifier {
     }
 
     if (_errorList.isNotEmpty) {
-      _isLoadingProgress = false;
-      notifyListeners();
       String _errorMessage = '';
       for (var i = 0; i < _errorList.length; i++) {
         _errorMessage += '${i + 1}) ${_errorList[i]}\n';
@@ -97,17 +64,20 @@ class AddingRecommendationViewModel extends ChangeNotifier {
       return;
     }
 
-    final vehicleNode =
-        VehicleNodeNames.getNameByIndex(_selectedVehiicleNodeIndex);
+    isLoadingProgress = true;
+    notifyListeners();
 
-    final imagesList = _imageFileList;
+    final vehicleNode =
+        VehicleNodeNames.getNameByIndex(selectedVehiicleNodeIndex);
 
     try {
       await _recommendationService.createRecommendation(
-          title: title,
-          vehicleNode: vehicleNode,
-          description: description,
-          imagesList: imagesList);
+        title: title,
+        vehicleNode: vehicleNode,
+        description: description,
+        imagesList: _imageService.imageFileList,
+        vehicleObjectId: _vehicleObjectId,
+      );
       //TODO Как-то сообщать об успехе операции, возможно
       Navigator.of(context).pop();
     } on ApiClientException catch (exception) {
@@ -126,23 +96,12 @@ class AddingRecommendationViewModel extends ChangeNotifier {
       ErrorDialogWidget.showUnknownError(context);
     }
 
-    _isLoadingProgress = false;
+    isLoadingProgress = false;
+    notifyListeners();
+  }
+
+  void setSelectedVehiicleNodeIndex(int index) {
+    selectedVehiicleNodeIndex = index;
     notifyListeners();
   }
 }
-
-//Отображение картинок, загруженных из базы данных
-// ParseFileBase? varFile =
-//                             snapshot.data![index].get<ParseFileBase>('file');
-
-//                         //Only iOS/Android/Desktop
-//                         /*
-//                         ParseFile? varFile =
-//                             snapshot.data![index].get<ParseFile>('file');
-//                         */
-//                         return Image.network(
-//                           varFile!.url!,
-//                           width: 200,
-//                           height: 200,
-//                           fit: BoxFit.fitHeight,
-//                         );

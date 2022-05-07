@@ -1,10 +1,14 @@
 import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/photo_list_widget.dart';
+import 'package:autospectechnics/ui/screens/breakages/breakage_details/breakage_details_view_model.dart';
+import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:autospectechnics/ui/theme/app_colors.dart';
 import 'package:autospectechnics/ui/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 class BreakageDetailsScreen extends StatelessWidget {
   const BreakageDetailsScreen({Key? key}) : super(key: key);
@@ -33,55 +37,54 @@ class _BodyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-      children: [
-        Row(
-          children: [
-            SvgPicture.asset(AppSvgs.chassis),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                'Лопнула задняя левая рессора',
-                style: AppTextStyles.semiBold.copyWith(
+    final isLoadingProgress =
+        context.select((BreakageDetailsViewModel vm) => vm.isLoadingProgress);
+    final configuration = context.select(
+        (BreakageDetailsViewModel vm) => vm.breakageWidgetConfiguration);
+    return isLoadingProgress
+        ? const Center(child: CircularProgressIndicator())
+        : ListView(
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
+            children: [
+              Row(
+                children: [
+                  SvgPicture.asset(configuration.vehicleNodeIconName),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      configuration.title,
+                      style: AppTextStyles.semiBold.copyWith(
+                        color: AppColors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  SvgPicture.asset(configuration.dangerLevelIconName),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      configuration.dangerLevel,
+                      style: AppTextStyles.hint.copyWith(
+                        color: AppColors.greyText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              PhotoListWidget(photosURL: configuration.photosURL),
+              const SizedBox(height: 16),
+              Text(
+                configuration.description,
+                style: AppTextStyles.regular16.copyWith(
                   color: AppColors.black,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            SvgPicture.asset(AppSvgs.criticalBreakage),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                'Уровень: критический',
-                style: AppTextStyles.hint.copyWith(
-                  color: AppColors.greyText,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 80,
-          child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemBuilder: (_, __) => Image.asset(AppImages.valdai),
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemCount: 4),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Половина листов задней левой рессоры лопнула, эксплуатация особенно с грузом невозможна. Менять только вместе с задней правой, потому что рессоры просели.',
-          style: AppTextStyles.regular16.copyWith(
-            color: AppColors.black,
-          ),
-        ),
-      ],
-    );
+            ],
+          );
   }
 }

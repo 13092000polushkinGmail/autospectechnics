@@ -50,77 +50,79 @@ class ScreenFactory {
 
   Widget makeVehicleMainInfo(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => VehicleMainInfoViewModel(vehicleObjectId),
+      create: (context) => VehicleMainInfoViewModel(vehicleObjectId, context),
       child: const VehicleMainInfoScreen(),
     );
   }
 
-  Widget makeRecommendations() {
+  Widget makeRecommendations(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => RecommendationsViewModel(),
+      create: (context) => RecommendationsViewModel(vehicleObjectId, context),
       child: const RecommendationsScreen(),
     );
   }
 
-  Widget makeRecommendationDetails() {
+  Widget makeRecommendationDetails(String recommendationObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => RecommendationDetailsViewModel(),
+      create: (context) =>
+          RecommendationDetailsViewModel(recommendationObjectId, context),
       child: const RecommendationDetailsScreen(),
     );
   }
 
-  Widget makeAddingRecommendation() {
+  Widget makeAddingRecommendation(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => AddingRecommendationViewModel(),
+      create: (_) => AddingRecommendationViewModel(vehicleObjectId),
       child: const AddingRecommendationScreen(),
     );
   }
 
-  Widget makeBreakages() {
+  Widget makeBreakages(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => BreakagesViewModel(),
+      create: (context) => BreakagesViewModel(vehicleObjectId, context),
       child: const BreakagesScreen(),
     );
   }
 
-  Widget makeBreakageDetails() {
+  Widget makeBreakageDetails(String breakageObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => BreakageDetailsViewModel(),
+      create: (context) => BreakageDetailsViewModel(breakageObjectId, context),
       child: const BreakageDetailsScreen(),
     );
   }
 
-  Widget makeAddingBreakage() {
+  Widget makeAddingBreakage(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => AddingBreakageViewModel(),
+      create: (_) => AddingBreakageViewModel(vehicleObjectId),
       child: const AddingBreakageScreen(),
     );
   }
 
-  Widget makeHistory() {
+  Widget makeRepairHistory(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => RepairHistoryViewModel(),
+      create: (context) => RepairHistoryViewModel(vehicleObjectId, context),
       child: const RepairHistoryScreen(),
     );
   }
 
-  Widget makeCompletedRepair() {
+  Widget makeCompletedRepair(String completedRepairObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => CompletedRepairViewModel(),
+      create: (context) => CompletedRepairViewModel(completedRepairObjectId, context),
       child: const CompletedRepairScreen(),
     );
   }
 
-  Widget makeAddingCompletedRepair() {
+  Widget makeAddingCompletedRepair(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => AddingCompletedRepairViewModel(),
+      create: (_) => AddingCompletedRepairViewModel(vehicleObjectId),
       child: const AddingCompletedRepairScreen(),
     );
   }
 
-  Widget makeRoutineMaintenance() {
+  Widget makeRoutineMaintenance(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => RoutineMaintenanceViewModel(),
+      create: (context) =>
+          RoutineMaintenanceViewModel(vehicleObjectId, context),
       child: const RoutineMaintenanceScreen(),
     );
   }

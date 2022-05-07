@@ -44,4 +44,6 @@ class RoutineMaintenanceHoursInfo {
     required this.periodicity,
     required this.engineHoursValue,
   });
+
+  int get remainEngineHours => periodicity - engineHoursValue;
 }

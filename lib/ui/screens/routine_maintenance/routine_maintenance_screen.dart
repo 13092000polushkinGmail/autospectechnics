@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-
-import 'package:autospectechnics/domain/entities/routine_maintenance.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/remaining_resource_progress_bar_widget.dart';
@@ -39,9 +37,9 @@ class _BodyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final model = context.watch<RoutineMaintenanceViewModel>();
-    final vehicleNodeDataList = model.vehicleNodeDataList;
-    return model.isDataLoading
+    final isDataLoading = context.select((RoutineMaintenanceViewModel vm) => vm.isDataLoading);
+    final vehicleNodeDataList = context.select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeDataList);
+    return isDataLoading
         ? const Center(child: CircularProgressIndicator())
         : ListView.separated(
             padding:
@@ -101,8 +99,7 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
 
   @override
   Widget build(BuildContext context) {
-    final model = context.watch<RoutineMaintenanceViewModel>();
-    final vehicleNodeDataList = model.vehicleNodeDataList;
+    final vehicleNodeDataList = context.select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeDataList);
     final headerConfiguration =
         vehicleNodeDataList[widget.vehicleNodeDataIndex].headerConfiguration;
     final routineMaintenanceList =
@@ -233,9 +230,10 @@ class _WorkInfoWidget extends StatelessWidget {
         ),
         OutlinedButton(
           onPressed: () => model.resetEngineHoursValue(
-            objectId: routineMaintenance.objectId,
+            routineMaintenanceObjectId: routineMaintenance.objectId,
             vehicleNodeDataIndex: vehicleNodeDataIndex,
             routineMaintenanceIndex: routineMaintenanceIndex,
+            context: context,
           ),
           //TODO Применяется ко всем кнопкам обновления, они крутятся одновременно, подумать, как исправить
           child: isRoutineMaintenanceUpdating
