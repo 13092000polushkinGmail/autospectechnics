@@ -1,6 +1,6 @@
-import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/top_circular_progress_indicator.dart';
 import 'package:autospectechnics/ui/screens/main_tabs/main_tabs_view_model.dart';
 import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:autospectechnics/ui/theme/app_box_decorations.dart';
@@ -21,21 +21,7 @@ class ObjectsListWidget extends StatelessWidget {
         title: 'Объекты',
         hasBackButton: false,
       ),
-      body: ListView(
-        padding:
-            const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-        children: [
-          ListView.separated(
-            itemCount: 10,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemBuilder: (_, __) => const _ObjectWidget(),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-          ),
-          const SizedBox(height: 16),
-          const _CompletedObjectsWidget(),
-        ],
-      ),
+      body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
         child: const Text('Добавить объект'),
         onPressed: () => model.openAddingObjectScreen(context),
@@ -45,26 +31,77 @@ class ObjectsListWidget extends StatelessWidget {
   }
 }
 
+class _BodyWidget extends StatelessWidget {
+  const _BodyWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final isObjectLoadingProgress =
+        context.select((MainTabsViewModel vm) => vm.isObjectLoadingProgress);
+    final buildingObjectList = context.select(
+        (MainTabsViewModel vm) => vm.buildingObjectWidgetConfigurationList);
+    return Stack(
+      children: [
+        ListView(
+          padding:
+              const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
+          children: [
+            ListView.separated(
+              itemCount: buildingObjectList.length,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemBuilder: (_, index) => _ObjectWidget(index: index),
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+            ),
+            //TODO Выполненные объекты, если останется время
+            // const SizedBox(height: 16),
+            // const _CompletedObjectsWidget(),
+          ],
+        ),
+        if (isObjectLoadingProgress) const TopCircularProgressIndicator(),
+      ],
+    );
+  }
+}
+
 class _ObjectWidget extends StatelessWidget {
-  const _ObjectWidget({Key? key}) : super(key: key);
+  final int index;
+  const _ObjectWidget({Key? key, required this.index}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final model = context.read<MainTabsViewModel>();
+    final buildingObjectWidgetConfiguration = context.select(
+        (MainTabsViewModel vm) =>
+            vm.buildingObjectWidgetConfigurationList[index]);
     return InkWell(
-      onTap: () => model.openObjectInfoScreen(context),
+      onTap: () => model.openObjectInfoScreen(context, index),
       borderRadius: BorderRadius.circular(12),
       child: DecoratedBox(
         decoration: AppBoxDecorations.cardBoxDecoration,
         child: Row(
-          children: const [
+          children: [
             Padding(
-              padding: EdgeInsets.only(
+              padding: const EdgeInsets.only(
                   left: 1, bottom: 1, top: 1), //Отступы, чтобы было видно рамку
-              // TODO Закомментировал потому что подключил сервер и теперь нужно вбивать адрес картинки child: ImageWidget(imageName: AppImages.mitsubishi),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                ),
+                child: SizedBox(
+                  height: 108,
+                  width: 116,
+                  child: NetworkImageWidget(
+                      url: buildingObjectWidgetConfiguration
+                          .buildingObjectImageURL),
+                ),
+              ),
             ),
-            SizedBox(width: 16),
-            Expanded(child: _ObjectInfoWidget()),
+            const SizedBox(width: 16),
+            Expanded(child: _ObjectInfoWidget(index: index)),
           ],
         ),
       ),
@@ -73,19 +110,24 @@ class _ObjectWidget extends StatelessWidget {
 }
 
 class _ObjectInfoWidget extends StatelessWidget {
+  final int index;
   const _ObjectInfoWidget({
     Key? key,
+    required this.index,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final buildingObjectWidgetConfiguration = context.select(
+        (MainTabsViewModel vm) =>
+            vm.buildingObjectWidgetConfigurationList[index]);
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 16, right: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'Mitsubishi Металлургов',
+            buildingObjectWidgetConfiguration.title,
             style: AppTextStyles.semiBold.copyWith(
               color: AppColors.black,
             ),
@@ -99,33 +141,45 @@ class _ObjectInfoWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
-                child: Column(
-                  children: [
-                    SvgPicture.asset(AppSvgs.significantBreakage),
-                    Text(
-                      'Техника',
-                      style: AppTextStyles.hint.copyWith(
-                        color: AppColors.black,
+                child: buildingObjectWidgetConfiguration.breakageIcon == null
+                    ? Text(
+                        'Техника не выбрана',
+                        style: AppTextStyles.hint.copyWith(
+                          color: AppColors.black,
+                        ),
+                        textAlign: TextAlign.center,
+                      )
+                    : Column(
+                        children: [
+                          SvgPicture.asset(
+                              buildingObjectWidgetConfiguration.breakageIcon!),
+                          Text(
+                            'Техника',
+                            style: AppTextStyles.hint.copyWith(
+                              color: AppColors.black,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   children: [
                     Text(
-                      '25 дней',
+                      buildingObjectWidgetConfiguration.daysInfo.daysAmount,
                       style: AppTextStyles.regular16.copyWith(
                         color: AppColors.black,
                       ),
                     ),
                     Text(
-                      'До начала',
+                      buildingObjectWidgetConfiguration.daysInfo.daysText,
                       style: AppTextStyles.hint.copyWith(
                         color: AppColors.black,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.fade,
+                      softWrap: false,
                     ),
                   ],
                 ),
@@ -201,7 +255,9 @@ class __CompletedObjectsWidgetState extends State<_CompletedObjectsWidget>
               child: const ColorFiltered(
                   colorFilter:
                       ColorFilter.mode(AppColors.greyText, BlendMode.color),
-                  child: _ObjectWidget()),
+                  child: _ObjectWidget(
+                    index: 1,
+                  )),
             ),
             separatorBuilder: (_, __) => const SizedBox(height: 12),
           ),

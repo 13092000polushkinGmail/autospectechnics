@@ -15,7 +15,7 @@ class PhotoListWidget extends StatelessWidget {
             children: [
               const SizedBox(height: 16),
               SizedBox(
-                height: 120,
+                height: 80,
                 child: ListView.separated(
                   itemCount: photosURL.length,
                   scrollDirection: Axis.horizontal,

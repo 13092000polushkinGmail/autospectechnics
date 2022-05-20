@@ -37,8 +37,10 @@ class _BodyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDataLoading = context.select((RoutineMaintenanceViewModel vm) => vm.isDataLoading);
-    final vehicleNodeDataList = context.select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeDataList);
+    final isDataLoading =
+        context.select((RoutineMaintenanceViewModel vm) => vm.isDataLoading);
+    final vehicleNodeDataList = context
+        .select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeDataList);
     return isDataLoading
         ? const Center(child: CircularProgressIndicator())
         : ListView.separated(
@@ -99,9 +101,8 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
 
   @override
   Widget build(BuildContext context) {
-    final vehicleNodeDataList = context.select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeDataList);
-    final headerConfiguration =
-        vehicleNodeDataList[widget.vehicleNodeDataIndex].headerConfiguration;
+    final vehicleNodeDataList = context
+        .select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeDataList);
     final routineMaintenanceList =
         vehicleNodeDataList[widget.vehicleNodeDataIndex].routineMaintenanceList;
     return DecoratedBox(
@@ -114,7 +115,9 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
               onTap: () => _toggleContainer(),
               child: _VehicleNodeHeaderWidget(
                 isActive: _isActive,
-                configuration: headerConfiguration,
+                iconName:
+                    vehicleNodeDataList[widget.vehicleNodeDataIndex].iconName,
+                title: vehicleNodeDataList[widget.vehicleNodeDataIndex].title,
               ),
             ),
             SizeTransition(
@@ -140,12 +143,14 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
 
 class _VehicleNodeHeaderWidget extends StatelessWidget {
   final bool isActive;
-  final VehicleNodeHeaderWidgetConfiguration configuration;
+  final String iconName;
+  final String title;
 
   const _VehicleNodeHeaderWidget({
     Key? key,
     required this.isActive,
-    required this.configuration,
+    required this.iconName,
+    required this.title,
   }) : super(key: key);
 
   @override
@@ -157,13 +162,13 @@ class _VehicleNodeHeaderWidget extends StatelessWidget {
     return Row(
       children: [
         SvgPicture.asset(
-          configuration.iconName,
+          iconName,
           color: color,
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
-            configuration.title,
+            title,
             style: AppTextStyles.regular20.copyWith(
               color: color,
             ),

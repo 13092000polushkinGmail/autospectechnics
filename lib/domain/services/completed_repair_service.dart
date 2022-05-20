@@ -40,25 +40,40 @@ class CompletedRepairService {
       await _photosToEntityApiClient.addPhotosRelationToEntity(
         parseObjectName: ParseObjectNames.completedRepair,
         entityObjectId: completedRepairObjectId,
-        imageObjectIdList: savedImagesObjectIds,
+        imageObjectIdList: savedImagesObjectIds.keys.toList(),
       );
     }
   }
 
-  Future<List<CompletedRepair>> getVehicleCompletedRepairs({
+  Future<List<CompletedRepair>> downloadVehicleCompletedRepairs({
     required String vehicleObjectId,
   }) async {
     final vehicleCompletedRepairs = await _completedRepairApiClient
         .getCompletedRepairList(vehicleObjectId: vehicleObjectId);
-    
+    await _completedRepairDataProvider
+        .deleteAllCompletedRepairsFromHive(vehicleObjectId);
+    for (var completedRepair in vehicleCompletedRepairs) {
+      await _completedRepairDataProvider.putCompletedRepairToHive(
+          completedRepair, vehicleObjectId);
+    }
+    return await getVehicleCompletedRepairsFromHive(
+        vehicleObjectId: vehicleObjectId);
+  }
+
+  Future<List<CompletedRepair>> getVehicleCompletedRepairsFromHive({
+    required String vehicleObjectId,
+  }) async {
+    final vehicleCompletedRepairs = await _completedRepairDataProvider
+        .getCompletedRepairsListFromHive(vehicleObjectId);
+    //TODO Нужна ли сортировка, не знаю, надо проверить как отображаются
+    // vehicleBreakages.sort((b, a) => a.dangerLevel.compareTo(b.dangerLevel));
     return vehicleCompletedRepairs;
   }
 
-  Future<CompletedRepair?> geCompletedRepair(
-    String completedRepairObjectId,
-  ) async {
-    final completedRepair = _completedRepairApiClient.getCompletedRepair(
-        objectId: completedRepairObjectId);
+  Future<CompletedRepair?> geCompletedRepairFromHive(
+      String completedRepairObjectId, String vehicleId) async {
+    final completedRepair = _completedRepairDataProvider
+        .getCompletedRepairFromHive(completedRepairObjectId, vehicleId);
     return completedRepair;
   }
 }

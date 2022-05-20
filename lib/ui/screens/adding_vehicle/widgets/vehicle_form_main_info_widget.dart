@@ -1,10 +1,9 @@
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_photo_widget.dart';
-import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_several_photos_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/text_field_template_widget.dart';
 import 'package:autospectechnics/ui/screens/adding_vehicle/adding_vehicle_view_model.dart';
-import 'package:autospectechnics/ui/screens/adding_vehicle/widgets/vehicle_stepper_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/stepper_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -21,16 +20,16 @@ class VehicleFormMainInfoWidget extends StatelessWidget {
         title: 'Основная информация',
         hasBackButton: true,
       ),
-      body: _BodyWidget(),
-      floatingActionButton: FloatingButtonWidget(
-        child: const Text('Сохранить'),
-        onPressed: () => model.saveToDatabase(context),
-      ),
-      //TODO Временно заменил эту кнопку, чтобы проверить, как сохраняется транспортное средство
+      body: const _BodyWidget(),
       // floatingActionButton: FloatingButtonWidget(
-      //   child: const Text('Далее'),
-      //   onPressed: () => model.incrementCurrentTabIndex(),
+      //   child: const Text('Сохранить'),
+      //   onPressed: () => model.saveToDatabase(context),
       // ),
+      // //TODO Временно заменил эту кнопку, чтобы проверить, как сохраняется транспортное средство
+      floatingActionButton: FloatingButtonWidget(
+        child: const Text('Далее'),
+        onPressed: () => model.incrementCurrentTabIndex(),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
@@ -44,11 +43,12 @@ class _BodyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.read<AddingVehicleViewModel>();
+    final stepperConfiguration =
+        context.select((AddingVehicleViewModel vm) => vm.stepperConfiguration);
     return ListView(
-      padding:
-          const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
       children: [
-        const VehicleStepperWidget(),
+        StepperWidget(configuration: stepperConfiguration),
         const SizedBox(height: 32),
         const _PhotoWidget(),
         const SizedBox(height: 32),
@@ -94,8 +94,11 @@ class _PhotoWidget extends StatelessWidget {
             onTap: () => model.pickImage(context: context),
           )
         : SizedBox(
-            height: 192,
+          height: 192,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
             child: image,
-          );
+          ),
+        );
   }
 }

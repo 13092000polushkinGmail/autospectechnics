@@ -7,8 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
 class ImagesApiClient {
-  
-
   Future<ParseObject> _saveImageToParseCloud(XFile imageFile) async {
     ParseFileBase parseFile;
     if (kIsWeb) {
@@ -24,20 +22,28 @@ class ImagesApiClient {
     return ParseObject(ParseObjectNames.image)..set('file', parseFile);
   }
 
-  Future<List<String>> saveImagesToDatabase(List<XFile> imagesList) async {
+  Future<Map<String, String>> saveImagesToDatabase(
+      List<XFile> imagesList) async {
     List<ParseObject> parseObjectsList = [];
     for (var image in imagesList) {
       parseObjectsList.add(await _saveImageToParseCloud(image));
     }
 
-    final savedImagesObjectIds = <String>[];
+    final savedImagesIdUrl = <String, String>{};
 
     for (var parseImage in parseObjectsList) {
       final ParseResponse apiResponse = await parseImage.save();
       ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
-      savedImagesObjectIds.add(parseImage.objectId!);
+      final apiResponseResults = apiResponse.results;
+      if (apiResponseResults != null) {
+        final savedImage = apiResponseResults.first as ParseObject;
+        final imageURL = savedImage.get<ParseFile>('file')?.get<String>('url');
+        if (imageURL != null) {
+          savedImagesIdUrl[parseImage.objectId!] = imageURL;
+        }
+      }
     }
-    return savedImagesObjectIds;
+    return savedImagesIdUrl;
   }
 
   //TODO Еще не тестировал
@@ -50,17 +56,4 @@ class ImagesApiClient {
       ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
     }
   }
-
-  // Future<List<ParseObject>> getImagesList() async {
-  //   QueryBuilder<ParseObject> queryPublisher =
-  //       QueryBuilder<ParseObject>(ParseObject('Gallery'))
-  //         ..orderByAscending('createdAt');
-  //   final ParseResponse apiResponse = await queryPublisher.query();
-
-  //   if (apiResponse.success && apiResponse.results != null) {
-  //     return apiResponse.results as List<ParseObject>;
-  //   } else {
-  //     return [];
-  //   }
-  // }
 }

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:autospectechnics/domain/api_clients/api_response_success_checker.dart';
 import 'package:autospectechnics/domain/entities/vehicle.dart';
-import 'package:autospectechnics/domain/entities/vehicle_details.dart';
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
@@ -38,7 +37,6 @@ class VehicleApiClient {
 
     QueryBuilder<ParseObject> queryVehicle =
         QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.vehicle))
-          ..keysToReturn(['model', 'photo'])
           ..orderByAscending('model')
           ..includeObject(['photo']);
 
@@ -147,26 +145,6 @@ class VehicleApiClient {
         }
       }
       return minRemainEngineHours;
-    }
-  }
-
-  Future<VehicleDetails?> getVehicleDetails({
-    required String vehicleObjectId,
-  }) async {
-    QueryBuilder<ParseObject> queryVehicleDetails =
-        QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.vehicle))
-          ..whereEqualTo('objectId', vehicleObjectId)
-          ..includeObject(['photo']);
-
-    final apiResponse = await queryVehicleDetails.query();
-    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
-
-    if (apiResponse.results != null) {
-      final vehicleObject = apiResponse.results!.first as ParseObject;
-
-      final vehicleDetails =
-          VehicleDetails.getVehicleDetails(vehicleObject: vehicleObject);
-      return vehicleDetails;
     }
   }
 }

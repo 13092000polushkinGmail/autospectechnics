@@ -1,21 +1,38 @@
+import 'dart:async';
+
 import 'package:autospectechnics/domain/entities/recommendation.dart';
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/vehicle_node_names.dart';
 import 'package:autospectechnics/domain/services/recommendation_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:hive/hive.dart';
 
 class RecommendationDetailsViewModel extends ChangeNotifier {
-  final String _recommendationObjectId;
-  final _recommendationService = RecommendationService();
+  late final _recommendationService = RecommendationService(_vehicleObjectId);
+
   Recommendation? _recommendation;
   bool isLoadingProgress = false;
 
+  final String _vehicleObjectId;
+  final String _recommendationObjectId;
   RecommendationDetailsViewModel(
+    this._vehicleObjectId,
     this._recommendationObjectId,
     BuildContext context,
   ) {
     _getRecommendation(context);
+    subscribeToRecommendationBox(context);
+  }
+
+  Stream<BoxEvent>? recommendationStream;
+  StreamSubscription<BoxEvent>? subscription;
+  Future<void> subscribeToRecommendationBox(BuildContext context) async {
+    recommendationStream =
+        await _recommendationService.getRecommendationStream();
+    subscription = recommendationStream?.listen((event) {
+      _getRecommendation(context);
+    });
   }
 
   RecommendationWidgetConfiguration get recommendationWidgetConfiguration =>
@@ -26,7 +43,10 @@ class RecommendationDetailsViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       _recommendation = await _recommendationService
-          .getRecommendation(_recommendationObjectId);
+          .getRecommendationFromHive(_recommendationObjectId);
+      if (_recommendation == null) {
+        ErrorDialogWidget.showDataSyncingError(context);
+      }
     } on ApiClientException catch (exception) {
       switch (exception.type) {
         case ApiClientExceptionType.network:
@@ -44,6 +64,13 @@ class RecommendationDetailsViewModel extends ChangeNotifier {
     }
     isLoadingProgress = false;
     notifyListeners();
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _recommendationService.dispose();
+    await subscription?.cancel();
+    super.dispose();
   }
 }
 

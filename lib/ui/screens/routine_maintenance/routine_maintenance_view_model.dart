@@ -21,7 +21,7 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
   final List<RoutineMaintenance> _technicalLiquidsWorkList = [];
   final List<RoutineMaintenance> _otherNodesWorkList = [];
 
-  final List<VehicleNodeData> _vehicleNodeDataList = [];
+  final List<VehicleNodeDataWidgetConfiguration> _vehicleNodeDataList = [];
 
   RoutineMaintenanceViewModel(
     this._vehicleObjectId,
@@ -30,7 +30,7 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
     getRoutineMaintenanceList(context);
   }
 
-  List<VehicleNodeData> get vehicleNodeDataList =>
+  List<VehicleNodeDataWidgetConfiguration> get vehicleNodeDataList =>
       List.unmodifiable(_vehicleNodeDataList);
 
   Future<void> getRoutineMaintenanceList(BuildContext context) async {
@@ -38,7 +38,8 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       final routineMaintenanceList = await _routineMaintenanceService
-          .getVehicleRoutineMaintenanceList(vehicleObjectId: _vehicleObjectId);
+          .getVehicleRoutineMaintenancesFromHive(
+              vehicleObjectId: _vehicleObjectId);
 
       for (var routineMaintenance in routineMaintenanceList) {
         final vehicleNode = routineMaintenance.vehicleNode;
@@ -63,68 +64,57 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
             break;
         }
       }
+
       if (_engineWorkList.isNotEmpty) {
         _vehicleNodeDataList.add(
-          VehicleNodeData(
-              headerConfiguration: VehicleNodeHeaderWidgetConfiguration(
-                iconName: AppSvgs.engine,
-                title: 'ДВС',
-              ),
+          VehicleNodeDataWidgetConfiguration(
+              iconName: AppSvgs.engine,
+              title: 'ДВС',
               routineMaintenanceList: _engineWorkList),
         );
       }
 
       if (_bodyworkWorkList.isNotEmpty) {
         _vehicleNodeDataList.add(
-          VehicleNodeData(
-              headerConfiguration: VehicleNodeHeaderWidgetConfiguration(
-                iconName: AppSvgs.bodywork,
-                title: 'Кузов',
-              ),
+          VehicleNodeDataWidgetConfiguration(
+              iconName: AppSvgs.bodywork,
+              title: 'Кузов',
               routineMaintenanceList: _bodyworkWorkList),
         );
       }
 
       if (_transmissionWorkList.isNotEmpty) {
         _vehicleNodeDataList.add(
-          VehicleNodeData(
-              headerConfiguration: VehicleNodeHeaderWidgetConfiguration(
-                iconName: AppSvgs.transmission,
-                title: 'КПП',
-              ),
+          VehicleNodeDataWidgetConfiguration(
+              iconName: AppSvgs.transmission,
+              title: 'КПП',
               routineMaintenanceList: _transmissionWorkList),
         );
       }
 
       if (_chassisWorkList.isNotEmpty) {
         _vehicleNodeDataList.add(
-          VehicleNodeData(
-              headerConfiguration: VehicleNodeHeaderWidgetConfiguration(
-                iconName: AppSvgs.chassis,
-                title: 'Ходовая',
-              ),
+          VehicleNodeDataWidgetConfiguration(
+              iconName: AppSvgs.chassis,
+              title: 'Ходовая',
               routineMaintenanceList: _chassisWorkList),
         );
       }
 
       if (_technicalLiquidsWorkList.isNotEmpty) {
         _vehicleNodeDataList.add(
-          VehicleNodeData(
-              headerConfiguration: VehicleNodeHeaderWidgetConfiguration(
-                iconName: AppSvgs.technicalLiquids,
-                title: 'Технические жидкости',
-              ),
+          VehicleNodeDataWidgetConfiguration(
+              iconName: AppSvgs.technicalLiquids,
+              title: 'Технические жидкости',
               routineMaintenanceList: _technicalLiquidsWorkList),
         );
       }
 
       if (_otherNodesWorkList.isNotEmpty) {
         _vehicleNodeDataList.add(
-          VehicleNodeData(
-              headerConfiguration: VehicleNodeHeaderWidgetConfiguration(
-                iconName: AppSvgs.otherNodes,
-                title: 'Прочие узлы',
-              ),
+          VehicleNodeDataWidgetConfiguration(
+              iconName: AppSvgs.otherNodes,
+              title: 'Прочие узлы',
               routineMaintenanceList: _otherNodesWorkList),
         );
       }
@@ -158,7 +148,7 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
     try {
       await _routineMaintenanceService.resetEngineHoursValue(
           routineMaintenanceObjectId: routineMaintenanceObjectId);
-      
+
       _vehicleNodeDataList[vehicleNodeDataIndex]
           .routineMaintenanceList[routineMaintenanceIndex]
           .engineHoursValue = 0;
@@ -187,22 +177,14 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
   }
 }
 
-class VehicleNodeHeaderWidgetConfiguration {
+class VehicleNodeDataWidgetConfiguration {
   final String iconName;
   final String title;
-
-  VehicleNodeHeaderWidgetConfiguration({
-    required this.iconName,
-    required this.title,
-  });
-}
-
-class VehicleNodeData {
-  final VehicleNodeHeaderWidgetConfiguration headerConfiguration;
   final List<RoutineMaintenance> routineMaintenanceList;
 
-  VehicleNodeData({
-    required this.headerConfiguration,
+  VehicleNodeDataWidgetConfiguration({
+    required this.iconName,
+    required this.title,
     required this.routineMaintenanceList,
   });
 }

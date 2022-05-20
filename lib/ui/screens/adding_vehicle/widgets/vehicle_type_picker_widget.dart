@@ -1,7 +1,7 @@
 import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/screens/adding_vehicle/adding_vehicle_view_model.dart';
-import 'package:autospectechnics/ui/screens/adding_vehicle/widgets/vehicle_stepper_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/stepper_widget.dart';
 import 'package:autospectechnics/ui/theme/app_colors.dart';
 import 'package:autospectechnics/ui/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +17,8 @@ class VehicleTypePickerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.read<AddingVehicleViewModel>();
+    final stepperConfiguration =
+        context.select((AddingVehicleViewModel vm) => vm.stepperConfiguration);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Тип ТС'),
@@ -29,7 +31,7 @@ class VehicleTypePickerWidget extends StatelessWidget {
         padding:
             const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
         children: [
-          const VehicleStepperWidget(),
+          StepperWidget(configuration: stepperConfiguration),
           const SizedBox(height: 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -37,12 +39,12 @@ class VehicleTypePickerWidget extends StatelessWidget {
               _VehicleTypeWidget(
                 iconName: AppSvgs.passengerCar,
                 title: 'Легковой автомобиль',
-                color: AppColors.greyText,
+                color: AppColors.blue,
               ),
               _VehicleTypeWidget(
                 iconName: AppSvgs.lowTonnageTruck,
                 title: 'Малотоннажный грузовик',
-                color: AppColors.blue,
+                color: AppColors.greyText,
               ),
               _VehicleTypeWidget(
                 iconName: AppSvgs.mediumTonnageTruck,

@@ -1,13 +1,25 @@
+import 'package:hive/hive.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
+part 'completed_repair.g.dart';
+
+@HiveType(typeId: 7)
 class CompletedRepair {
+  @HiveField(0)
   final String objectId;
+  @HiveField(1)
   final String title;
+  @HiveField(2)
   final int mileage;
+  @HiveField(3)
   final String description;
+  @HiveField(4)
   final DateTime date;
+  @HiveField(5)
   final String vehicleNode;
+  @HiveField(6)
   final List<String> photosURL;
+  @HiveField(7)
   final String breakageObjectId;
   CompletedRepair({
     required this.objectId,

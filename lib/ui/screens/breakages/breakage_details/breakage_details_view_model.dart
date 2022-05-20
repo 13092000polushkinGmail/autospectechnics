@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:autospectechnics/domain/entities/breakage.dart';
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/breakage_danger_level.dart';
@@ -6,18 +8,32 @@ import 'package:autospectechnics/domain/services/breakage_service.dart';
 import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 class BreakageDetailsViewModel extends ChangeNotifier {
-  final String _breakageObjectId;
-  final _breakageService = BreakageService();
+  late final _breakageService = BreakageService(_vehicleObjectId);
+
   Breakage? _breakage;
   bool isLoadingProgress = false;
 
+  final String _vehicleObjectId;
+  final String _breakageObjectId;
   BreakageDetailsViewModel(
+    this._vehicleObjectId,
     this._breakageObjectId,
     BuildContext context,
   ) {
     _getBreakage(context);
+    subscribeToBreakageBox(context);
+  }
+
+  Stream<BoxEvent>? breakageStream;
+  StreamSubscription<BoxEvent>? subscription;
+  Future<void> subscribeToBreakageBox(BuildContext context) async {
+    breakageStream = await _breakageService.getBreakageStream();
+    subscription = breakageStream?.listen((event) {
+      _getBreakage(context);
+    });
   }
 
   BreakageWidgetConfiguration get breakageWidgetConfiguration =>
@@ -27,7 +43,10 @@ class BreakageDetailsViewModel extends ChangeNotifier {
     isLoadingProgress = true;
     notifyListeners();
     try {
-      _breakage = await _breakageService.getBreakage(_breakageObjectId);
+      _breakage = await _breakageService.getBreakageFromHive(_breakageObjectId);
+      if (_breakage == null) {
+        ErrorDialogWidget.showDataSyncingError(context);
+      }
     } on ApiClientException catch (exception) {
       switch (exception.type) {
         case ApiClientExceptionType.network:
@@ -45,6 +64,13 @@ class BreakageDetailsViewModel extends ChangeNotifier {
     }
     isLoadingProgress = false;
     notifyListeners();
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _breakageService.dispose();
+    await subscription?.cancel();
+    super.dispose();
   }
 }
 

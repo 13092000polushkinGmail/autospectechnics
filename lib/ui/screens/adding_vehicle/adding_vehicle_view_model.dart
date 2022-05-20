@@ -1,73 +1,41 @@
-import 'dart:io';
-
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
+import 'package:autospectechnics/domain/services/image_service.dart';
 import 'package:autospectechnics/domain/services/vehicle_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
-import 'package:autospectechnics/ui/screens/adding_vehicle/widgets/vehicle_stepper_widget.dart';
-import 'package:flutter/foundation.dart';
+import 'package:autospectechnics/ui/global_widgets/stepper_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 class AddingVehicleViewModel extends ChangeNotifier {
-  final ImagePicker _imagePicker = ImagePicker();
+  final _imageService = ImageService();
   final _vehicleService = VehicleService();
-
-  XFile? _imageFile;
-  bool _isLoadingProgress = false;
-
-  bool get isLoadingProgress => _isLoadingProgress;
-
-  Image? get image {
-    final imageFile = _imageFile;
-    if (imageFile != null) {
-      return kIsWeb
-          ? Image.network(
-              imageFile.path,
-              //TODO Обратить внимание на этот BoxFit, возможно использовать его на странице автопарка
-              fit: BoxFit.cover,
-            )
-          : Image.file(
-              File(imageFile.path),
-              fit: BoxFit.cover,
-            );
-    }
-  }
-
-  var _currentTabIndex = 0;
-  var _maxPickedTabIndex = 0;
 
   final modelTextControler = TextEditingController();
   final mileageTextControler = TextEditingController();
   final licensePlateTextControler = TextEditingController();
   final descriptionTextControler = TextEditingController();
 
-  CircleStepConfiguration getCircleStepConfiguration(int index) {
-    CircleStepState stepState;
-    void Function()? onTap;
+  bool _isLoadingProgress = false;
+  int _currentTabIndex = 0;
+  int _maxPickedTabIndex = 0;
 
-    if (index == _currentTabIndex) {
-      stepState = CircleStepState.editing;
-    } else if (index < _currentTabIndex) {
-      stepState = CircleStepState.completed;
-    } else if (index < _maxPickedTabIndex) {
-      //&& index > _currentTabIndex опустил, потому что исходя из верхних условий это условие уже точно выполняется, в нижних аналогично
-      stepState = CircleStepState.completed;
-    } else if (index == _maxPickedTabIndex) {
-      stepState = CircleStepState.indexed;
+  bool get isLoadingProgress => _isLoadingProgress;
+  
+  Image? get image {
+    final imageList = _imageService.imageList;
+    if (imageList.isEmpty) {
+      return null;
     } else {
-      stepState = CircleStepState
-          .disabled; //index > _maxPickedTabIndex опустил, потому что исходя из верхних условий это условие уже точно выполняется
+      return _imageService.imageList.first;
     }
-
-    if (stepState == CircleStepState.disabled) {
-      onTap = null;
-    } else {
-      onTap = () => setCurrentTabIndex(index);
-    }
-
-    return CircleStepConfiguration(
-        index: index, stepState: stepState, onTap: onTap);
   }
+
+  StepperWidgetConfiguration get stepperConfiguration =>
+      StepperWidgetConfiguration(
+        stepAmount: 5,
+        currentTabIndex: _currentTabIndex,
+        maxPickedTabIndex: _maxPickedTabIndex,
+        setCurrentTabIndex: setCurrentTabIndex,
+      );
 
   int get currentTabIndex => _currentTabIndex;
 
@@ -93,7 +61,7 @@ class AddingVehicleViewModel extends ChangeNotifier {
     required BuildContext context,
   }) async {
     try {
-      _imageFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+      await _imageService.pickImage(isMultiImage: false);
       notifyListeners();
     } catch (e) {
       ErrorDialogWidget.showErrorWithMessage(
@@ -140,15 +108,16 @@ class AddingVehicleViewModel extends ChangeNotifier {
       return;
     }
 
-    final image = _imageFile;
+    final imageFile = _imageService.imageFileList?.first;
 
     try {
       await _vehicleService.createVehicle(
-          model: model,
-          mileage: mileage,
-          licensePlate: licensePlate,
-          description: description,
-          image: image);
+        model: model,
+        mileage: mileage,
+        licensePlate: licensePlate,
+        description: description,
+        image: imageFile,
+      );
       //TODO Как-то сообщать об успехе операции, возможно
       Navigator.of(context).pop();
     } on ApiClientException catch (exception) {

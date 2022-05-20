@@ -1,3 +1,4 @@
+import 'package:autospectechnics/domain/date_formatter.dart';
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/vehicle_node_names.dart';
 import 'package:autospectechnics/domain/services/completed_repair_service.dart';
@@ -26,15 +27,7 @@ class AddingCompletedRepairViewModel extends ChangeNotifier {
 
   List<Image> get imageList => _imageService.imageList;
 
-  String get selectedDate {
-    final unformattedString = _selectedDate.toString().split(' ')[0];
-    final resultString = unformattedString.substring(8, 10) +
-        '.' +
-        unformattedString.substring(5, 7) +
-        '.' +
-        unformattedString.substring(0, 4);
-    return resultString;
-  }
+  String get selectedDate => DateFormatter.getFormattedDate(_selectedDate);
 
   Future<void> selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -100,7 +93,7 @@ class AddingCompletedRepairViewModel extends ChangeNotifier {
         VehicleNodeNames.getNameByIndex(selectedVehiicleNodeIndex);
 
     try {
-      final vehicle = await _vehicleService.getVehicleDetails(
+      final vehicle = await _vehicleService.getVehicleFromHive(
           vehicleObjectId: _vehicleObjectId);
       int mileage = 0;
       if (vehicle != null) {

@@ -5,4 +5,6 @@ abstract class ParseObjectNames {
   static const vehicle = 'Vehicle';
   static const breakage = 'Breakage';
   static const completedRepair = 'CompletedRepair';
+  static const buildingObject = 'BuildingObject';
+  static const vehicleBuildingObject = 'VehicleBuildingObject';
 }

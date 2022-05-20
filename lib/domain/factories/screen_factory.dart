@@ -62,10 +62,11 @@ class ScreenFactory {
     );
   }
 
-  Widget makeRecommendationDetails(String recommendationObjectId) {
+  Widget makeRecommendationDetails(
+      String vehicleObjectId, String recommendationObjectId) {
     return ChangeNotifierProvider(
-      create: (context) =>
-          RecommendationDetailsViewModel(recommendationObjectId, context),
+      create: (context) => RecommendationDetailsViewModel(
+          vehicleObjectId, recommendationObjectId, context),
       child: const RecommendationDetailsScreen(),
     );
   }
@@ -84,9 +85,10 @@ class ScreenFactory {
     );
   }
 
-  Widget makeBreakageDetails(String breakageObjectId) {
+  Widget makeBreakageDetails(String vehicleObjectId, String breakageObjectId) {
     return ChangeNotifierProvider(
-      create: (context) => BreakageDetailsViewModel(breakageObjectId, context),
+      create: (context) =>
+          BreakageDetailsViewModel(vehicleObjectId, breakageObjectId, context),
       child: const BreakageDetailsScreen(),
     );
   }
@@ -105,9 +107,11 @@ class ScreenFactory {
     );
   }
 
-  Widget makeCompletedRepair(String completedRepairObjectId) {
+  Widget makeCompletedRepair(
+      String vehicleObjectId, String completedRepairObjectId) {
     return ChangeNotifierProvider(
-      create: (context) => CompletedRepairViewModel(completedRepairObjectId, context),
+      create: (context) => CompletedRepairViewModel(
+          vehicleObjectId, completedRepairObjectId, context),
       child: const CompletedRepairScreen(),
     );
   }
@@ -134,16 +138,16 @@ class ScreenFactory {
     );
   }
 
-  Widget makeObjectMainInfo() {
+  Widget makeObjectMainInfo(String buildingObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => ObjectMainInfoViewModel(),
+      create: (context) => ObjectMainInfoViewModel(buildingObjectId, context),
       child: const ObjectMainInfoScreen(),
     );
   }
 
   Widget makeAddingObject() {
     return ChangeNotifierProvider(
-      create: (_) => AddingObjectViewModel(),
+      create: (context) => AddingObjectViewModel(context),
       child: const AddingObjectScreen(),
     );
   }

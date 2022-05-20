@@ -36,10 +36,22 @@ class ErrorDialogWidget {
     );
   }
 
+  ErrorDialogWidget.showDataSyncingError(BuildContext context) {
+    _showErrorDialogWidget(
+      context: context,
+      title: 'Ошибка синхронизации данных',
+      errorMessage:
+          'Данная запись отстуствует. Скорее всего, она была удалена другим пользователем. Если вы уверены, что она существует, закройте страницу и повторите попытку.',
+      //Сделано для того, чтобы убрать из стека виджетов диалоговое окно и виджет, на котором это диалоговое окно вызвано
+      popAmount: 2,
+    );
+  }
+
   void _showErrorDialogWidget({
     required BuildContext context,
     required String errorMessage,
     required String title,
+    int popAmount = 1,
   }) {
     showDialog<AlertDialog>(
       context: context,
@@ -48,7 +60,11 @@ class ErrorDialogWidget {
         content: Text(errorMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              for (var i = 0; i < popAmount; i++) {
+                Navigator.of(context).pop();
+              }
+            },
             child: const Text('Ок'),
           ),
         ],

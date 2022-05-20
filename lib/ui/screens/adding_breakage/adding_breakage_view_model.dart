@@ -9,9 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AddingBreakageViewModel extends ChangeNotifier {
-  final String _vehicleObjectId;
-
-  final _breakageService = BreakageService();
+  late final _breakageService = BreakageService(_vehicleObjectId);
   final _imageService = ImageService();
 
   bool isLoadingProgress = false;
@@ -21,6 +19,7 @@ class AddingBreakageViewModel extends ChangeNotifier {
   final titleTextControler = TextEditingController();
   final descriptionTextControler = TextEditingController();
 
+  final String _vehicleObjectId;
   AddingBreakageViewModel(
     this._vehicleObjectId,
   );
@@ -92,7 +91,6 @@ class AddingBreakageViewModel extends ChangeNotifier {
         dangerLevel: selectedDangerLevelIndex - 1,
         description: description,
         imagesList: _imageService.imageFileList,
-        vehicleObjectId: _vehicleObjectId,
       );
       Navigator.of(context).pop();
     } on ApiClientException catch (exception) {
@@ -123,6 +121,12 @@ class AddingBreakageViewModel extends ChangeNotifier {
   void setSelectedDangerLevelIndex(int index) {
     selectedDangerLevelIndex = index;
     notifyListeners();
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _breakageService.dispose();
+    super.dispose();
   }
 }
 

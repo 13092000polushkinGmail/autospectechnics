@@ -1,6 +1,7 @@
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/remaining_resource_progress_bar_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/top_circular_progress_indicator.dart';
 import 'package:autospectechnics/ui/screens/main_tabs/main_tabs_view_model.dart';
 import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:autospectechnics/ui/theme/app_box_decorations.dart';
@@ -10,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
+//TODO Может быть грузить по одной тачке, показывать ее, грузуть следующую, когда она появляется добавлять в список
 //TODO Попробовать кэшировать данные и в тайне от пользователя сверять с базой данных при входе, если будут различия, обновлять страницу
 class VehiclesParkWidget extends StatelessWidget {
   const VehiclesParkWidget({Key? key}) : super(key: key);
@@ -40,27 +42,35 @@ class _BodyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.read<MainTabsViewModel>();
-    final isLoadingProgress =
-        context.select((MainTabsViewModel vm) => vm.isLoadingProgress);
+    final isVehicleLoadingProgress =
+        context.select((MainTabsViewModel vm) => vm.isVehicleLoadingProgress);
     final vehiclesList = context
         .select((MainTabsViewModel vm) => vm.vehiclesWidgetConfigurationList);
-    return isLoadingProgress
-        ? const Center(child: CircularProgressIndicator())
-        : vehiclesList.isEmpty
+    //TODO самодельный индикатор загрузки накладывается на RefreshIndicaotor, но его нельзя убрать, потому что рефреш индикатор не работает при открытии приложения, только после попытки обновления, может это можно настроить, но проблему надо решить
+    return Stack(
+      children: [
+        vehiclesList.isEmpty
             //TODO Временная мера, в идеале сообщать, что пошло не так и в зависимости от этого возвращать подходящее предложение: обновить страницу (в случае с ошибкой), добавить автомобиль в случае если автопарк пуст и тд
             ? Center(
                 child: TextButton(
                   child: const Text('Обновить страницу'),
-                  onPressed: () => model.getVehicles(context),
+                  onPressed: () => model.downloadVehicles(context),
                 ),
               )
-            : ListView.separated(
-                itemCount: vehiclesList.length,
-                itemBuilder: (_, index) => _VehicleWidget(index: index),
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                padding: const EdgeInsets.only(
-                    left: 16, right: 16, top: 16, bottom: 88),
-              );
+            : RefreshIndicator(
+                onRefresh: () => model.getData(context),
+                displacement: 8,
+                child: ListView.separated(
+                  itemCount: vehiclesList.length,
+                  itemBuilder: (_, index) => _VehicleWidget(index: index),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  padding: const EdgeInsets.only(
+                      left: 16, right: 16, top: 16, bottom: 88),
+                ),
+              ),
+        if (isVehicleLoadingProgress) const TopCircularProgressIndicator(),
+      ],
+    );
   }
 }
 

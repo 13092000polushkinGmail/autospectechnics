@@ -1,10 +1,19 @@
+import 'package:hive/hive.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
+part 'routine_maintenance.g.dart';
+
+@HiveType(typeId: 8)
 class RoutineMaintenance {
+  @HiveField(0)
   final String objectId;
+  @HiveField(1)
   final String title;
+  @HiveField(2)
   final int periodicity;
+  @HiveField(3)
   int engineHoursValue;
+  @HiveField(4)
   final String vehicleNode;
   RoutineMaintenance({
     required this.objectId,

@@ -3,6 +3,7 @@ import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/vehicle_node_names.dart';
 import 'package:autospectechnics/domain/services/completed_repair_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
+import 'package:autospectechnics/ui/navigation/arguments_configurations/completed_repair_arguments_configuration.dart';
 import 'package:autospectechnics/ui/navigation/main_navigation.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -31,9 +32,8 @@ class RepairHistoryViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       _completedRepairList =
-          await _completedRepairService.getVehicleCompletedRepairs(
-        vehicleObjectId: _vehicleObjectId,
-      );
+          await _completedRepairService.getVehicleCompletedRepairsFromHive(
+              vehicleObjectId: _vehicleObjectId);
     } on ApiClientException catch (exception) {
       switch (exception.type) {
         case ApiClientExceptionType.network:
@@ -60,7 +60,9 @@ class RepairHistoryViewModel extends ChangeNotifier {
   ) {
     Navigator.of(context).pushNamed(
       MainNavigationRouteNames.completedRepairScreen,
-      arguments: _completedRepairList[index].objectId,
+      arguments: CompletedRepairArgumentsConfiguration(
+          vehicleObjectId: _vehicleObjectId,
+          completedRepairObjectId: _completedRepairList[index].objectId),
     );
   }
 

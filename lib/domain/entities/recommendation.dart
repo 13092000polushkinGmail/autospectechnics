@@ -1,11 +1,22 @@
+import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
+part 'recommendation.g.dart';
+
+@HiveType(typeId: 6)
 class Recommendation {
+  @HiveField(0)
   final String objectId;
+  @HiveField(1)
   final String title;
+  @HiveField(2)
   final String vehicleNode;
+  @HiveField(3)
   final String description;
+  @HiveField(4)
   final bool isCompleted;
+  @HiveField(5)
   final List<String> photosURL;
   Recommendation({
     required this.objectId,
@@ -46,5 +57,28 @@ class Recommendation {
       isCompleted: isCompleted,
       photosURL: photosURL,
     );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Recommendation &&
+        other.objectId == objectId &&
+        other.title == title &&
+        other.vehicleNode == vehicleNode &&
+        other.description == description &&
+        other.isCompleted == isCompleted &&
+        listEquals(other.photosURL, photosURL);
+  }
+
+  @override
+  int get hashCode {
+    return objectId.hashCode ^
+        title.hashCode ^
+        vehicleNode.hashCode ^
+        description.hashCode ^
+        isCompleted.hashCode ^
+        photosURL.hashCode;
   }
 }

@@ -7,16 +7,16 @@ import 'package:autospectechnics/domain/services/recommendation_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
 
 class AddingRecommendationViewModel extends ChangeNotifier {
-  final String _vehicleObjectId;
-  final _recommendationService = RecommendationService();
+  late final _recommendationService = RecommendationService(_vehicleObjectId);
   final _imageService = ImageService();
-  
+
   bool isLoadingProgress = false;
   int selectedVehiicleNodeIndex = -1;
 
   final titleTextControler = TextEditingController();
   final descriptionTextControler = TextEditingController();
 
+  final String _vehicleObjectId;
   AddingRecommendationViewModel(
     this._vehicleObjectId,
   );
@@ -76,7 +76,6 @@ class AddingRecommendationViewModel extends ChangeNotifier {
         vehicleNode: vehicleNode,
         description: description,
         imagesList: _imageService.imageFileList,
-        vehicleObjectId: _vehicleObjectId,
       );
       //TODO Как-то сообщать об успехе операции, возможно
       Navigator.of(context).pop();
@@ -103,5 +102,11 @@ class AddingRecommendationViewModel extends ChangeNotifier {
   void setSelectedVehiicleNodeIndex(int index) {
     selectedVehiicleNodeIndex = index;
     notifyListeners();
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _recommendationService.dispose();
+    super.dispose();
   }
 }

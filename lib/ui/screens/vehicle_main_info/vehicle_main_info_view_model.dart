@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:autospectechnics/domain/entities/breakage.dart';
 import 'package:autospectechnics/domain/entities/completed_repair.dart';
 import 'package:autospectechnics/domain/entities/recommendation.dart';
 import 'package:autospectechnics/domain/entities/routine_maintenance.dart';
+import 'package:autospectechnics/domain/entities/vehicle.dart';
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/services/breakage_service.dart';
 import 'package:autospectechnics/domain/services/completed_repair_service.dart';
@@ -9,37 +12,65 @@ import 'package:autospectechnics/domain/services/recommendation_service.dart';
 import 'package:autospectechnics/domain/services/routine_maintenance_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
 import 'package:flutter/cupertino.dart';
-
-import 'package:autospectechnics/domain/entities/vehicle_details.dart';
 import 'package:autospectechnics/domain/services/vehicle_service.dart';
 import 'package:autospectechnics/ui/navigation/main_navigation.dart';
+import 'package:hive/hive.dart';
 
 class VehicleMainInfoViewModel extends ChangeNotifier {
-  final String _vehicleObjectId;
-
   final _vehicleService = VehicleService();
-  final _recommendationService = RecommendationService();
-  final _breakageService = BreakageService();
   final _completedRepairService = CompletedRepairService();
   final _routineMaintenanceService = RoutineMaintenanceService();
+  late final _breakageService = BreakageService(_vehicleObjectId);
+  late final _recommendationService = RecommendationService(_vehicleObjectId);
 
   bool isLoadingProgress = false;
-  VehicleDetails? _vehicleDetails;
+  Vehicle? _vehicle;
   final List<Recommendation> _recommendationList = [];
   final List<Breakage> _breakageList = [];
   final List<CompletedRepair> _completedRepairList = [];
   final List<RoutineMaintenance> _routineMaintenanceList = [];
 
+  final String _vehicleObjectId;
   VehicleMainInfoViewModel(
     this._vehicleObjectId,
     BuildContext context,
   ) {
     getVehicleInfo(context);
+    subscribeToBoxes(context);
+  }
+  Stream<BoxEvent>? breakageStream;
+  StreamSubscription<BoxEvent>? breakageSubscription;
+  Stream<BoxEvent>? recommendationStream;
+  StreamSubscription<BoxEvent>? recommendationSubscription;
+
+  //TODO Колхоз без обработки ошибок, чтобы обновлять виджет, также не работает dispose
+  Future<void> subscribeToBoxes(BuildContext context) async {
+    breakageStream = await _breakageService.getBreakageStream();
+    breakageSubscription = breakageStream?.listen((event) {
+      getBreakages();
+    });
+
+    recommendationStream =
+        await _recommendationService.getRecommendationStream();
+    recommendationSubscription = recommendationStream?.listen((event) {});
   }
 
-  String? get imageURL => _vehicleDetails?.imageURL;
+  Future<void> getBreakages() async {
+    _breakageList.clear();
+    _breakageList.addAll(await _breakageService.getVehicleBreakagesFromHive());
+    notifyListeners();
+  }
+
+  Future<void> getRecommendations() async {
+    _recommendationList.clear();
+    _recommendationList.addAll(
+        await _recommendationService.getVehicleRecommendationsFromHive());
+    notifyListeners();
+  }
+
+  String? get imageURL => _vehicle?.imageURL;
   VehicleDataWidgetConfiguration get vehicleDataWidgetConfiguration =>
-      VehicleDataWidgetConfiguration(_vehicleDetails);
+      VehicleDataWidgetConfiguration(_vehicle);
   RecommendationsWidgetConfiguration get recommendationsWidgetConfiguration =>
       RecommendationsWidgetConfiguration(_recommendationList);
   BreakagesWidgetConfiguration get breakagesWidgetConfiguration =>
@@ -55,28 +86,54 @@ class VehicleMainInfoViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _vehicleDetails = await _vehicleService.getVehicleDetails(
+      _vehicle = await _vehicleService.getVehicleFromHive(
           vehicleObjectId: _vehicleObjectId);
+      notifyListeners();
+
+      _routineMaintenanceList.addAll(await _routineMaintenanceService
+          .getVehicleRoutineMaintenancesFromHive(
+              vehicleObjectId: _vehicleObjectId));
+      notifyListeners();
+
+      _breakageList
+          .addAll(await _breakageService.getVehicleBreakagesFromHive());
+      notifyListeners();
 
       _recommendationList.addAll(
-        await _recommendationService.getVehicleRecommendations(
-            vehicleObjectId: _vehicleObjectId),
-      );
-
-      _breakageList.addAll(
-        await _breakageService.getVehicleBreakages(
-            vehicleObjectId: _vehicleObjectId),
-      );
+          await _recommendationService.getVehicleRecommendationsFromHive());
+      notifyListeners();
 
       _completedRepairList.addAll(
-        await _completedRepairService.getVehicleCompletedRepairs(
-            vehicleObjectId: _vehicleObjectId),
-      );
+          await _completedRepairService.getVehicleCompletedRepairsFromHive(
+              vehicleObjectId: _vehicleObjectId));
+      notifyListeners();
 
-      _routineMaintenanceList.addAll(
-        await _routineMaintenanceService.getVehicleRoutineMaintenanceList(
-            vehicleObjectId: _vehicleObjectId),
-      );
+      //TODO Возможно это не то поведение, которое будет оптимальным
+      final routineMaintenancesFromServer = await _routineMaintenanceService
+          .downloadVehicleRoutineMaintenanceList(
+              vehicleObjectId: _vehicleObjectId);
+      _routineMaintenanceList.clear();
+      _routineMaintenanceList.addAll(routineMaintenancesFromServer);
+      notifyListeners();
+
+      final recommendationsFromServer =
+          await _recommendationService.downloadVehicleRecommendations();
+      _recommendationList.clear();
+      _recommendationList.addAll(recommendationsFromServer);
+      notifyListeners();
+
+      final breakagesFromServer =
+          await _breakageService.downloadVehicleBreakages();
+      _breakageList.clear();
+      _breakageList.addAll(breakagesFromServer);
+      notifyListeners();
+
+      final completedRepairsFromServer = await _completedRepairService
+          .downloadVehicleCompletedRepairs(vehicleObjectId: _vehicleObjectId);
+      _completedRepairList.clear();
+      _completedRepairList.addAll(completedRepairsFromServer);
+      notifyListeners();
+      print('ЗАГРУЗКА ВСЕ');
     } on ApiClientException catch (exception) {
       switch (exception.type) {
         case ApiClientExceptionType.network:
@@ -124,6 +181,12 @@ class VehicleMainInfoViewModel extends ChangeNotifier {
       arguments: _vehicleObjectId,
     );
   }
+
+  @override
+  Future<void> dispose() async {
+    await _breakageService.dispose();
+    super.dispose();
+  }
 }
 
 class VehicleDataWidgetConfiguration {
@@ -131,12 +194,12 @@ class VehicleDataWidgetConfiguration {
   late String mileage;
   late String licensePlate;
   late String description;
-  VehicleDataWidgetConfiguration(VehicleDetails? vehicleDetails) {
-    model = vehicleDetails?.model ?? 'Данные не получены';
-    final intMileage = vehicleDetails?.mileage;
+  VehicleDataWidgetConfiguration(Vehicle? vehicle) {
+    model = vehicle?.model ?? 'Данные не получены';
+    final intMileage = vehicle?.mileage;
     mileage = intMileage == null ? '' : 'Пробег $intMileage км';
-    licensePlate = vehicleDetails?.licensePlate ?? '';
-    description = vehicleDetails?.description ?? '';
+    licensePlate = vehicle?.licensePlate ?? '';
+    description = vehicle?.description ?? '';
   }
 }
 

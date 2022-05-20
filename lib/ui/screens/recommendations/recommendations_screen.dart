@@ -38,12 +38,12 @@ class _BodyWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLoadingProgress =
         context.select((RecommendationsViewModel vm) => vm.isLoadingProgress);
-    final recommendationList =
-        context.select((RecommendationsViewModel vm) => vm.recommendationList);
+    final recommendationListLength = context
+        .select((RecommendationsViewModel vm) => vm.recommendationListLength);
     return isLoadingProgress
         ? const Center(child: CircularProgressIndicator())
         : ListView.separated(
-            itemCount: recommendationList.length,
+            itemCount: recommendationListLength,
             itemBuilder: (_, index) => _RecommendationCardWidget(index: index),
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             padding:
@@ -64,47 +64,49 @@ class _RecommendationCardWidget extends StatelessWidget {
     final model = context.read<RecommendationsViewModel>();
     final configuration = context.select((RecommendationsViewModel vm) =>
         vm.getRecommendationCardWidgetConfiguration(index));
-    return InkWell(
-      onTap: () => model.openRecommendationDetailsScreen(context, index),
-      child: DecoratedBox(
-        decoration: AppBoxDecorations.cardBoxDecoration,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              SvgPicture.asset(configuration.vehicleNodeIconName),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return configuration != null
+        ? InkWell(
+            onTap: () => model.openRecommendationDetailsScreen(context, index),
+            child: DecoratedBox(
+              decoration: AppBoxDecorations.cardBoxDecoration,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    Text(
-                      configuration.title,
-                      style: AppTextStyles.regular16.copyWith(
-                        color: AppColors.black,
+                    SvgPicture.asset(configuration.vehicleNodeIconName),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            configuration.title,
+                            style: AppTextStyles.regular16.copyWith(
+                              color: AppColors.black,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.fade,
+                            softWrap: false,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            configuration.description,
+                            style: AppTextStyles.hint.copyWith(
+                              color: AppColors.greyText,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.fade,
-                      softWrap: false,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      configuration.description,
-                      style: AppTextStyles.hint.copyWith(
-                        color: AppColors.greyText,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right_rounded),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded),
-            ],
-          ),
-        ),
-      ),
-    );
+            ),
+          )
+        : const SizedBox.shrink();
   }
 }

@@ -1,17 +1,22 @@
 import 'package:autospectechnics/domain/api_clients/images_api_client.dart';
 import 'package:autospectechnics/domain/api_clients/photos_to_entity_adding_relation_api_client.dart';
 import 'package:autospectechnics/domain/api_clients/recommendation_api_client.dart';
+import 'package:autospectechnics/domain/data_providers/recommendation_data_provider.dart';
 import 'package:autospectechnics/domain/entities/recommendation.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
+import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 
 class RecommendationService {
+  final String _vehicleObjectId;
+
   final _recommendationApiClient = RecommendationApiClient();
   final _imagesApiClient = ImagesApiClient();
   final _photosToEntityApiClient = PhotosToEntityAddingRelationApiClient();
 
-  //TODO Такой вариант не работает, потому что сервис каждый раз создается новый, для этого нужно хранить данные на устройстве
-  //final Map<String, List<Recommendation>> vehicleRecommendationsDictionary = {};
+  RecommendationService(this._vehicleObjectId);
+  late final _recommendationDataProvider =
+      RecommendationDataProvider(_vehicleObjectId);
 
   Future<void> createRecommendation({
     required String title,
@@ -19,7 +24,6 @@ class RecommendationService {
     required String description,
     bool isCompleted = false,
     List<XFile>? imagesList,
-    required String vehicleObjectId,
   }) async {
     final recommendationObjectId =
         await _recommendationApiClient.saveRecommendationToDatabase(
@@ -27,36 +31,65 @@ class RecommendationService {
       vehicleNode: vehicleNode,
       description: description,
       isCompleted: isCompleted,
-      vehicleObjectId: vehicleObjectId,
+      vehicleObjectId: _vehicleObjectId,
     );
-    if (recommendationObjectId != null &&
-        imagesList != null &&
-        imagesList.isNotEmpty) {
-      final savedImagesObjectIds =
-          await _imagesApiClient.saveImagesToDatabase(imagesList);
-      await _photosToEntityApiClient.addPhotosRelationToEntity(
-        parseObjectName: ParseObjectNames.recommendation,
-        entityObjectId: recommendationObjectId,
-        imageObjectIdList: savedImagesObjectIds,
+    Map<String, String> savedImagesIdUrl = {};
+    if (recommendationObjectId != null) {
+      if (imagesList != null && imagesList.isNotEmpty) {
+        savedImagesIdUrl =
+            await _imagesApiClient.saveImagesToDatabase(imagesList);
+        await _photosToEntityApiClient.addPhotosRelationToEntity(
+          parseObjectName: ParseObjectNames.recommendation,
+          entityObjectId: recommendationObjectId,
+          imageObjectIdList: savedImagesIdUrl.keys.toList(),
+        );
+      }
+      final recommendation = Recommendation(
+        objectId: recommendationObjectId,
+        title: title,
+        vehicleNode: vehicleNode,
+        description: description,
+        isCompleted: isCompleted,
+        photosURL: savedImagesIdUrl.values.toList(),
       );
+      await _recommendationDataProvider.putRecommendationToHive(recommendation);
     }
   }
 
-  Future<List<Recommendation>> getVehicleRecommendations({
-    required String vehicleObjectId,
-  }) async {
+  Future<List<Recommendation>> downloadVehicleRecommendations() async {
+    final vehicleRecommendationsFromServer = await _recommendationApiClient
+        .getVehicleRecommendationList(vehicleObjectId: _vehicleObjectId);
+    await _recommendationDataProvider.deleteUnnecessaryRecommendationsFromHive(
+        vehicleRecommendationsFromServer);
+    for (var recommendation in vehicleRecommendationsFromServer) {
+      await _recommendationDataProvider.putRecommendationToHive(recommendation);
+    }
+    return await getVehicleRecommendationsFromHive();
+  }
+
+  Future<List<Recommendation>> getVehicleRecommendationsFromHive() async {
     final vehicleRecommendations =
-        await _recommendationApiClient.getVehicleRecommendationList(
-      vehicleObjectId: vehicleObjectId,
-    );
+        await _recommendationDataProvider.getRecommendationsListFromHive();
+    //TODO Нужна ли сортировка, не знаю, надо проверить как отображаются
+    // vehicleBreakages.sort((b, a) => a.dangerLevel.compareTo(b.dangerLevel));
     return vehicleRecommendations;
   }
 
-  Future<Recommendation?> getRecommendation(
+  Future<Recommendation?> getRecommendationFromHive(
       String recommendationObjectId) async {
-    final recommendation = await _recommendationApiClient.getRecommendation(
-        objectId: recommendationObjectId);
+    final recommendation = await _recommendationDataProvider
+        .getRecommendationFromHive(recommendationObjectId);
     return recommendation;
+  }
+
+  Future<Stream<BoxEvent>> getRecommendationStream() async {
+    final recommendationStream =
+        await _recommendationDataProvider.getRecommendationStream();
+    return recommendationStream;
+  }
+
+  Future<void> dispose() async {
+    await _recommendationDataProvider.dispose();
   }
 
   // Future<void> updateRecommendation({

@@ -9,8 +9,16 @@ class ImageService {
   List<XFile>? _imageFileList;
   List<XFile>? get imageFileList => _imageFileList;
 
-  Future<void> pickImage() async {
-    _imageFileList = await _imagePicker.pickMultiImage();
+  Future<void> pickImage({
+    bool isMultiImage = true,
+  }) async {
+    if (isMultiImage) {
+      _imageFileList = await _imagePicker.pickMultiImage();
+    } else {
+      final imageFile =
+          await _imagePicker.pickImage(source: ImageSource.gallery);
+      if (imageFile != null) _imageFileList = [imageFile];
+    }
   }
 
   List<Image> get imageList {

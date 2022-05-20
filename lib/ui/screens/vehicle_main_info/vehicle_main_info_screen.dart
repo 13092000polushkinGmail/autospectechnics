@@ -1,5 +1,5 @@
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
-import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/top_circular_progress_indicator.dart';
 import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:autospectechnics/ui/screens/vehicle_main_info/vehicle_main_info_view_model.dart';
 import 'package:autospectechnics/ui/theme/app_box_decorations.dart';
@@ -13,17 +13,12 @@ class VehicleMainInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppBarWidget(
+    return const Scaffold(
+      appBar: AppBarWidget(
         title: 'Авто',
         hasBackButton: true,
       ),
-      body: const _BodyWidget(),
-      floatingActionButton: FloatingButtonWidget(
-        child: const Text('Редактировать'),
-        onPressed: () {},
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      body: _BodyWidget(),
     );
   }
 }
@@ -39,40 +34,41 @@ class _BodyWidget extends StatelessWidget {
         context.select((VehicleMainInfoViewModel vm) => vm.isLoadingProgress);
     final imageURL =
         context.select((VehicleMainInfoViewModel vm) => vm.imageURL);
-    return isLoadingProgress
-        ? const Center(
-            child: CircularProgressIndicator(),
-          )
-        : ListView(
-            padding: const EdgeInsets.only(bottom: 88),
-            children: [
-              Stack(
-                children: [
-                  AspectRatio(
-                    aspectRatio: 1.8,
-                    child: NetworkImageWidget(url: imageURL),
+    return Stack(
+      children: [
+        ListView(
+          padding: const EdgeInsets.only(bottom: 16),
+          children: [
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.8,
+                  child: NetworkImageWidget(url: imageURL),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: const [
+                      SizedBox(height: 152),
+                      _VehicleDataWidget(),
+                      SizedBox(height: 12),
+                      _RoutineMaintenanceWidget(),
+                      SizedBox(height: 12),
+                      _RecommendationsWidget(),
+                      SizedBox(height: 12),
+                      _BreakagesWidget(),
+                      SizedBox(height: 12),
+                      _RepairHistoryWidget(),
+                    ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: const [
-                        SizedBox(height: 152),
-                        _VehicleDataWidget(),
-                        SizedBox(height: 12),
-                        _RoutineMaintenanceWidget(),
-                        SizedBox(height: 12),
-                        _RecommendationsWidget(),
-                        SizedBox(height: 12),
-                        _BreakagesWidget(),
-                        SizedBox(height: 12),
-                        _RepairHistoryWidget(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          );
+                ),
+              ],
+            ),
+          ],
+        ),
+        if (isLoadingProgress) const TopCircularProgressIndicator(),
+      ],
+    );
   }
 }
 
@@ -219,43 +215,18 @@ class _InfoCardWidget extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Expanded(
-                          child: Text(
-                            upperLeftText,
-                            style: AppTextStyles.hint
-                                .copyWith(color: AppColors.greyText),
-                          ),
-                        ),
+                        _SmallTextWidget(text: upperLeftText),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            upperRightText,
-                            style: AppTextStyles.hint
-                                .copyWith(color: AppColors.greyText),
-                          ),
-                        ),
+                        if (upperRightText.isNotEmpty)
+                        _SmallTextWidget(text: upperRightText),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Expanded(
-                          child: Text(
-                            lowerLeftText,
-                            style: AppTextStyles.hint
-                                .copyWith(color: AppColors.greyText),
-                          ),
-                        ),
+                        _SmallTextWidget(text: lowerLeftText),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            lowerRightText,
-                            style: AppTextStyles.hint
-                                .copyWith(color: AppColors.greyText),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        _SmallTextWidget(text: lowerRightText),
                       ],
                     ),
                   ],
@@ -269,6 +240,28 @@ class _InfoCardWidget extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SmallTextWidget extends StatelessWidget {
+  const _SmallTextWidget({
+    Key? key,
+    required this.text,
+  }) : super(key: key);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Text(
+        text,
+        style: AppTextStyles.hint.copyWith(color: AppColors.greyText),
+        maxLines: 1,
+        overflow: TextOverflow.fade,
+        softWrap: false,
       ),
     );
   }

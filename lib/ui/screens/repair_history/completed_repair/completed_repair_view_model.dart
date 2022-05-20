@@ -10,14 +10,16 @@ import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
 import 'package:flutter/material.dart';
 
 class CompletedRepairViewModel extends ChangeNotifier {
+  final String _vehicleObjectId;
   final String _completedRepairObjectId;
   final _completedRepairService = CompletedRepairService();
-  final _breakageService = BreakageService();
+  late final _breakageService = BreakageService(_vehicleObjectId);
   CompletedRepair? _completedRepair;
   Breakage? _breakage;
   bool isLoadingProgress = false;
 
   CompletedRepairViewModel(
+    this._vehicleObjectId,
     this._completedRepairObjectId,
     BuildContext context,
   ) {
@@ -33,12 +35,15 @@ class CompletedRepairViewModel extends ChangeNotifier {
     isLoadingProgress = true;
     notifyListeners();
     try {
-      _completedRepair = await _completedRepairService
-          .geCompletedRepair(_completedRepairObjectId);
+      _completedRepair =
+          await _completedRepairService.geCompletedRepairFromHive(
+              _completedRepairObjectId, _vehicleObjectId);
 
       final breakageObjectId = _completedRepair?.breakageObjectId;
+
       if (breakageObjectId != null && breakageObjectId.isNotEmpty) {
-        _breakage = await _breakageService.getBreakage(breakageObjectId);
+        _breakage =
+            await _breakageService.getBreakageFromHive(breakageObjectId);
       }
     } on ApiClientException catch (exception) {
       switch (exception.type) {
@@ -57,6 +62,12 @@ class CompletedRepairViewModel extends ChangeNotifier {
     }
     isLoadingProgress = false;
     notifyListeners();
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _breakageService.dispose();
+    super.dispose();
   }
 }
 

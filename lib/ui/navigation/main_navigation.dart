@@ -1,4 +1,7 @@
 import 'package:autospectechnics/domain/factories/screen_factory.dart';
+import 'package:autospectechnics/ui/navigation/arguments_configurations/breakage_details_arguments_configuration.dart';
+import 'package:autospectechnics/ui/navigation/arguments_configurations/completed_repair_arguments_configuration.dart';
+import 'package:autospectechnics/ui/navigation/arguments_configurations/recommendation_details_arguments_configuration.dart';
 import 'package:flutter/material.dart';
 
 class MainNavigationRouteNames {
@@ -67,8 +70,8 @@ class MainNavigation {
     MainNavigationRouteNames.writingEngineHoursScreen: (_) =>
         _screenFactory.makeWritingEngineHours(),
 
-    MainNavigationRouteNames.objectMainInfoScreen: (_) =>
-        _screenFactory.makeObjectMainInfo(),
+    // MainNavigationRouteNames.objectMainInfoScreen: (_) =>
+    //     _screenFactory.makeObjectMainInfo(),
     MainNavigationRouteNames.addingObjectScreen: (_) =>
         _screenFactory.makeAddingObject(),
   };
@@ -96,10 +99,15 @@ class MainNavigation {
         );
       case MainNavigationRouteNames.recommendationDetailsScreen:
         final arguments = settings.arguments;
-        final recommendationObjectId = arguments is String ? arguments : '';
+        String vehicleObjectId = '';
+        String recommendationObjectId = '';
+        if (arguments is RecommendationDetailsArgumentsConfiguration) {
+          vehicleObjectId = arguments.vehicleObjectId;
+          recommendationObjectId = arguments.recommendationObjectId;
+        }
         return MaterialPageRoute(
-          builder: (_) =>
-              _screenFactory.makeRecommendationDetails(recommendationObjectId),
+          builder: (_) => _screenFactory.makeRecommendationDetails(
+              vehicleObjectId, recommendationObjectId),
         );
       case MainNavigationRouteNames.addingRecommendationScreen:
         final arguments = settings.arguments;
@@ -116,9 +124,15 @@ class MainNavigation {
         );
       case MainNavigationRouteNames.breakageDetailsScreen:
         final arguments = settings.arguments;
-        final breakageObjectId = arguments is String ? arguments : '';
+        String vehicleObjectId = '';
+        String breakageObjectId = '';
+        if (arguments is BreakageDetailsArgumentsConfiguration) {
+          vehicleObjectId = arguments.vehicleObjectId;
+          breakageObjectId = arguments.breakageObjectId;
+        }
         return MaterialPageRoute(
-          builder: (_) => _screenFactory.makeBreakageDetails(breakageObjectId),
+          builder: (_) => _screenFactory.makeBreakageDetails(
+              vehicleObjectId, breakageObjectId),
         );
       case MainNavigationRouteNames.addingBreakageScreen:
         final arguments = settings.arguments;
@@ -134,10 +148,17 @@ class MainNavigation {
         );
       case MainNavigationRouteNames.completedRepairScreen:
         final arguments = settings.arguments;
-        final completedRepairObjectId = arguments is String ? arguments : '';
+        final vehicleObjectId =
+            arguments is CompletedRepairArgumentsConfiguration
+                ? arguments.vehicleObjectId
+                : '';
+        final completedRepairObjectId =
+            arguments is CompletedRepairArgumentsConfiguration
+                ? arguments.completedRepairObjectId
+                : '';
         return MaterialPageRoute(
-          builder: (_) =>
-              _screenFactory.makeCompletedRepair(completedRepairObjectId),
+          builder: (_) => _screenFactory.makeCompletedRepair(
+              vehicleObjectId, completedRepairObjectId),
         );
       case MainNavigationRouteNames.addingCompletedRepairScreen:
         final arguments = settings.arguments;
@@ -146,12 +167,12 @@ class MainNavigation {
           builder: (_) =>
               _screenFactory.makeAddingCompletedRepair(vehicleObjectId),
         );
-      // case MainNavigationRouteNames.movieTrailerWidget:
-      //   final arguments = settings.arguments;
-      //   final youtubeKey = arguments is String ? arguments : '';
-      //   return MaterialPageRoute(
-      //     builder: (_) => _screenFactory.makeMovieTrailer(youtubeKey),
-      //   );
+      case MainNavigationRouteNames.objectMainInfoScreen:
+        final arguments = settings.arguments;
+        final buildingObjectId = arguments is String ? arguments : '';
+        return MaterialPageRoute(
+          builder: (_) => _screenFactory.makeObjectMainInfo(buildingObjectId),
+        );
       default:
         const widget =
             Text('Ошибка навигации, пожалуйста перезапустите приложение.');
