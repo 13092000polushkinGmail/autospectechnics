@@ -24,6 +24,56 @@ class BuildingObjectApiClient {
     return buildingObject.objectId;
   }
 
+  Future<String?> updateBuildingObject({
+    required String objectId,
+    String? title,
+    DateTime? startDate,
+    DateTime? finishDate,
+    String? description,
+    bool? isCompleted,
+  }) async {
+    var buildingObject = ParseObject(ParseObjectNames.buildingObject);
+    buildingObject.objectId = objectId;
+
+    if (title != null) {
+      buildingObject.set('title', title);
+    }
+
+    if (startDate != null) {
+      buildingObject.set('startDate', startDate);
+    }
+
+    if (finishDate != null) {
+      buildingObject.set('finishDate', finishDate);
+    }
+
+    if (description != null) {
+      buildingObject.set('description', description);
+    }
+
+    if (isCompleted != null) {
+      buildingObject.set('isCompleted', isCompleted);
+    }
+
+    if (title != null ||
+        startDate != null ||
+        finishDate != null ||
+        description != null ||
+        isCompleted != null) {
+      final ParseResponse apiResponse = await buildingObject.save();
+      ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    }
+    return buildingObject.objectId;
+  }
+
+  Future<void> deleteBuildingObject(String buildingObjectId) async {
+    final parseBuildingObject = ParseObject(ParseObjectNames.buildingObject)
+      ..objectId = buildingObjectId;
+
+    final ParseResponse apiResponse = await parseBuildingObject.delete();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+  }
+
   Future<List<BuildingObject>> getBuildingObjectList() async {
     List<BuildingObject> buildingObjectList = [];
 

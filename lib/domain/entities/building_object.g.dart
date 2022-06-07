@@ -23,7 +23,7 @@ class BuildingObjectAdapter extends TypeAdapter<BuildingObject> {
       finishDate: fields[3] as DateTime,
       description: fields[4] as String,
       isCompleted: fields[5] as bool,
-      photosURL: (fields[6] as List).cast<String>(),
+      imagesIdUrl: (fields[6] as Map).cast<String, String>(),
     );
   }
 
@@ -44,7 +44,7 @@ class BuildingObjectAdapter extends TypeAdapter<BuildingObject> {
       ..writeByte(5)
       ..write(obj.isCompleted)
       ..writeByte(6)
-      ..write(obj.photosURL);
+      ..write(obj.imagesIdUrl);
   }
 
   @override

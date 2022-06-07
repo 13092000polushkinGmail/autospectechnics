@@ -1,24 +1,25 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
 part 'building_object.g.dart';
 
 @HiveType(typeId: 4)
-class BuildingObject {
+class BuildingObject extends HiveObject {
   @HiveField(0)
   final String objectId;
   @HiveField(1)
-  final String title;
+  String title;
   @HiveField(2)
-  final DateTime startDate;
+  DateTime startDate;
   @HiveField(3)
-  final DateTime finishDate;
+  DateTime finishDate;
   @HiveField(4)
-  final String description;
+  String description;
   @HiveField(5)
-  final bool isCompleted;
+  bool isCompleted;
   @HiveField(6)
-  final List<String> photosURL;
+  Map<String, String> imagesIdUrl;
   BuildingObject({
     required this.objectId,
     required this.title,
@@ -26,7 +27,7 @@ class BuildingObject {
     required this.finishDate,
     required this.description,
     required this.isCompleted,
-    required this.photosURL,
+    required this.imagesIdUrl,
   });
 
   static BuildingObject getBuildingObject({
@@ -43,13 +44,14 @@ class BuildingObject {
         'Описание не предоставлено';
     final isCompleted = buildingObject.get<bool>('isCompleted') ?? false;
 
-    List<String> photosURL = [];
+    Map<String, String> imagesIdUrl = {};
     for (var imageParseObject in imagesList) {
+      final imageId = imageParseObject.objectId;
       String? imageURL;
       final imageFile = imageParseObject.get<ParseFileBase>('file');
       imageURL = imageFile?.url;
-      if (imageURL != null) {
-        photosURL.add(imageURL);
+      if (imageId != null && imageURL != null) {
+        imagesIdUrl[imageId] = imageURL;
       }
     }
 
@@ -60,7 +62,60 @@ class BuildingObject {
       finishDate: finishDate,
       description: description,
       isCompleted: isCompleted,
-      photosURL: photosURL,
+      imagesIdUrl: imagesIdUrl,
     );
+  }
+
+  void updateBuildingObject(
+    String? title,
+    DateTime? startDate,
+    DateTime? finishDate,
+    String? description,
+    bool? isCompleted,
+    Map<String, String>? imagesIdUrl,
+  ) {
+    if (title != null) {
+      this.title = title;
+    }
+    if (startDate != null) {
+      this.startDate = startDate;
+    }
+    if (finishDate != null) {
+      this.finishDate = finishDate;
+    }
+    if (description != null) {
+      this.description = description;
+    }
+    if (isCompleted != null) {
+      this.isCompleted = isCompleted;
+    }
+    if (imagesIdUrl != null && imagesIdUrl.isNotEmpty) {
+      this.imagesIdUrl.addAll(imagesIdUrl);
+    }
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is BuildingObject &&
+        other.objectId == objectId &&
+        other.title == title &&
+        other.startDate == startDate &&
+        other.finishDate == finishDate &&
+        other.description == description &&
+        other.isCompleted == isCompleted &&
+        mapEquals(other.imagesIdUrl, imagesIdUrl);
+  }
+
+  @override
+  int get hashCode {
+    return objectId.hashCode ^
+        title.hashCode ^
+        startDate.hashCode ^
+        finishDate.hashCode ^
+        description.hashCode ^
+        isCompleted.hashCode ^
+        imagesIdUrl.hashCode;
   }
 }

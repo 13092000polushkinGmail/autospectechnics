@@ -3,39 +3,87 @@ import 'package:autospectechnics/domain/entities/completed_repair.dart';
 import 'package:hive/hive.dart';
 
 class CompletedRepairDataProvider {
-
-  Future<Box<CompletedRepair>> _openBox(String vehicleId) async {
-    return await BoxManager.instance.openBox(
-      name: 'completed_repair_box_$vehicleId',
+  late Future<Box<CompletedRepair>> _futureBox;
+  final String _vehicleId;
+  CompletedRepairDataProvider(this._vehicleId) {
+    _futureBox = BoxManager.instance.openBox(
+      name: 'completed_repair_box_$_vehicleId',
       typeId: 7,
       adapter: CompletedRepairAdapter(),
     );
   }
 
-  Future<void> putCompletedRepairToHive(CompletedRepair completedRepair, String vehicleId) async {
-    final box = await _openBox(vehicleId);
-    await box.put(completedRepair.objectId, completedRepair);
-    await BoxManager.instance.closeBox(box);
+  Future<Stream<BoxEvent>> getCompletedRepairStream() async {
+    final box = await _futureBox;
+    final completedRepairStream = box.watch();
+    return completedRepairStream;
   }
 
-  Future<List<CompletedRepair>> getCompletedRepairsListFromHive(String vehicleId) async {
-    final box = await _openBox(vehicleId);
+  Future<void> putCompletedRepairToHive(CompletedRepair completedRepair) async {
+    final box = await _futureBox;
+    final completedRepairFromHive = box.get(completedRepair.objectId);
+    if (completedRepairFromHive == null ||
+        completedRepairFromHive != completedRepair) {
+      await box.put(completedRepair.objectId, completedRepair);
+    }
+  }
+
+  Future<void> updateCompletedRepairInHive({
+    required String completedRepairId,
+    String? title,
+    int? mileage,
+    String? description,
+    DateTime? date,
+    String? vehicleNode,
+    Map<String, String>? imagesIdUrl,
+  }) async {
+    final box = await _futureBox;
+    final completedRepair = box.get(completedRepairId);
+    if (completedRepair != null) {
+      completedRepair.updateCompletedRepair(
+        title,
+        mileage,
+        description,
+        date,
+        vehicleNode,
+        imagesIdUrl,
+      );
+      await completedRepair.save();
+    }
+  }
+
+  Future<void> deleteCompletedRepairFromHive(String completedRepairId) async {
+    final box = await _futureBox;
+    await box.delete(completedRepairId);
+  }
+
+  Future<List<CompletedRepair>> getCompletedRepairsListFromHive() async {
+    final box = await _futureBox;
     final list = box.values.toList();
-    await BoxManager.instance.closeBox(box);
     return list;
   }
 
   Future<CompletedRepair?> getCompletedRepairFromHive(
-      String completedRepairId, String vehicleId) async {
-    final box = await _openBox(vehicleId);
+      String completedRepairId) async {
+    final box = await _futureBox;
     final completedRepair = box.get(completedRepairId);
-    await BoxManager.instance.closeBox(box);
     return completedRepair;
   }
 
-  Future<void> deleteAllCompletedRepairsFromHive(String vehicleId) async {
-    final box = await _openBox(vehicleId);
-    await box.clear();
+  Future<void> deleteUnnecessaryCompletedRepairsFromHive(
+      List<CompletedRepair> vehicleCompletedRepairsFromServer) async {
+    final box = await _futureBox;
+    final keysToDelete = box.keys.toList();
+    for (var completedRepair in vehicleCompletedRepairsFromServer) {
+      if (keysToDelete.contains(completedRepair.objectId)) {
+        keysToDelete.remove(completedRepair.objectId);
+      }
+    }
+    box.deleteAll(keysToDelete);
+  }
+
+  Future<void> dispose() async {
+    final box = await _futureBox;
     await BoxManager.instance.closeBox(box);
   }
 }

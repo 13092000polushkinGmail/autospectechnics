@@ -1,14 +1,13 @@
-import 'package:autospectechnics/resources/resources.dart';
-import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
-import 'package:autospectechnics/ui/screens/adding_vehicle/adding_vehicle_view_model.dart';
-import 'package:autospectechnics/ui/global_widgets/stepper_widget.dart';
-import 'package:autospectechnics/ui/theme/app_colors.dart';
-import 'package:autospectechnics/ui/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-//TODO Переделать в соотвествии с выбором узла автомиобиля из добавления рекомендации
+import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/stepper_widget.dart';
+import 'package:autospectechnics/ui/screens/adding_vehicle/adding_vehicle_view_model.dart';
+import 'package:autospectechnics/ui/theme/app_colors.dart';
+import 'package:autospectechnics/ui/theme/app_text_styles.dart';
+
 class VehicleTypePickerWidget extends StatelessWidget {
   const VehicleTypePickerWidget({
     Key? key,
@@ -17,8 +16,6 @@ class VehicleTypePickerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.read<AddingVehicleViewModel>();
-    final stepperConfiguration =
-        context.select((AddingVehicleViewModel vm) => vm.stepperConfiguration);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Тип ТС'),
@@ -27,76 +24,7 @@ class VehicleTypePickerWidget extends StatelessWidget {
           onPressed: () => model.decrementCurrentTabIndex(),
         ),
       ),
-      body: ListView(
-        padding:
-            const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-        children: [
-          StepperWidget(configuration: stepperConfiguration),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: const [
-              _VehicleTypeWidget(
-                iconName: AppSvgs.passengerCar,
-                title: 'Легковой автомобиль',
-                color: AppColors.blue,
-              ),
-              _VehicleTypeWidget(
-                iconName: AppSvgs.lowTonnageTruck,
-                title: 'Малотоннажный грузовик',
-                color: AppColors.greyText,
-              ),
-              _VehicleTypeWidget(
-                iconName: AppSvgs.mediumTonnageTruck,
-                title: 'Среднетоннажный грузовик',
-                color: AppColors.greyText,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: const [
-              _VehicleTypeWidget(
-                iconName: AppSvgs.miniLoader,
-                title: 'Мини-погрузчик',
-                color: AppColors.greyText,
-              ),
-              _VehicleTypeWidget(
-                iconName: AppSvgs.excavator,
-                title: 'Экскаватор',
-                color: AppColors.greyText,
-              ),
-              _VehicleTypeWidget(
-                iconName: AppSvgs.cementMixer,
-                title: 'Бетоновоз',
-                color: AppColors.greyText,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: const [
-              _VehicleTypeWidget(
-                iconName: AppSvgs.truckCrane,
-                title: 'Манипулятор и автокран',
-                color: AppColors.greyText,
-              ),
-              _VehicleTypeWidget(
-                iconName: AppSvgs.dumpTruck,
-                title: 'Самосвал и тонар',
-                color: AppColors.greyText,
-              ),
-              _VehicleTypeWidget(
-                iconName: AppSvgs.other,
-                title: 'Другое',
-                color: AppColors.greyText,
-              ),
-            ],
-          ),
-        ],
-      ),
+      body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
         child: const Text('Далее'),
         onPressed: () => model.incrementCurrentTabIndex(),
@@ -106,49 +34,76 @@ class VehicleTypePickerWidget extends StatelessWidget {
   }
 }
 
-//TODO Реализовать перекрашивание выбранных квадратиков
+class _BodyWidget extends StatelessWidget {
+  const _BodyWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final stepperConfiguration =
+        context.select((AddingVehicleViewModel vm) => vm.stepperConfiguration);
+    return ListView(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
+      children: [
+        StepperWidget(configuration: stepperConfiguration),
+        const SizedBox(height: 32),
+        GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 24,
+            crossAxisSpacing: 24,
+            childAspectRatio: 1,
+          ),
+          itemCount: 9,
+          itemBuilder: (_, index) => _VehicleTypeWidget(index: index),
+        ),
+      ],
+    );
+  }
+}
+
 class _VehicleTypeWidget extends StatelessWidget {
-  final String iconName;
-  final String title;
-  //TODO Цвет брать в зависимости от того выбрана карточка или нет, не передавать явно
-  final Color color;
+  final int index;
+
   const _VehicleTypeWidget({
     Key? key,
-    required this.iconName,
-    required this.title,
-    required this.color,
+    required this.index,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 96,
-      height: 96,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: color,
-            //TODO Ширину рамки брать в зависимости от того выбрана карточка или нет
-            width: color == AppColors.blue ? 1.5 : 1.0,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: AppColors.white,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              iconName,
-              color: color,
+    final model = context.read<AddingVehicleViewModel>();
+    final configuration = context.select((AddingVehicleViewModel vm) =>
+        vm.getVehicleTypeWidgetConfiguration(index));
+    return GestureDetector(
+      onTap: () => model.setSelectedVehiicleTypeIndex(index),
+      child: SizedBox(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: configuration.color,
+              width: configuration.borderWidth,
             ),
-            Text(
-              title,
-              style: AppTextStyles.smallLabels.copyWith(
-                color: color,
+            borderRadius: BorderRadius.circular(12),
+            color: AppColors.white,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset(
+                configuration.vehicleCard.iconName,
+                color: configuration.color,
               ),
-              textAlign: TextAlign.center,
-            )
-          ],
+              Text(
+                configuration.vehicleCard.title,
+                style: AppTextStyles.smallLabels.copyWith(
+                  color: configuration.color,
+                ),
+                textAlign: TextAlign.center,
+              )
+            ],
+          ),
         ),
       ),
     );

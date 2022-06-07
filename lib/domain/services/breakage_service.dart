@@ -8,12 +8,11 @@ import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 
 class BreakageService {
-  final String _vehicleObjectId;
-
   final _breakageApiClient = BreakageApiClient();
   final _imagesApiClient = ImagesApiClient();
   final _photosToEntityApiClient = PhotosToEntityAddingRelationApiClient();
 
+  final String _vehicleObjectId;
   BreakageService(this._vehicleObjectId);
   late final _breakageDataProvider = BreakageDataProvider(_vehicleObjectId);
 
@@ -51,28 +50,93 @@ class BreakageService {
         dangerLevel: dangerLevel,
         description: description,
         isFixed: isFixed,
-        photosURL: savedImagesIdUrl.values.toList(),
+        imagesIdUrl: savedImagesIdUrl,
       );
       await _breakageDataProvider.putBreakageToHive(breakage);
     }
   }
 
-  Future<List<Breakage>> downloadVehicleBreakages() async {
-    final vehicleBreakagesFromServer = await _breakageApiClient.getVehicleBreakageList(
-        vehicleObjectId: _vehicleObjectId);
+  Future<void> fixBreakage(String breakageId) async {
+    final breakageObjectId = await _breakageApiClient.updateBreakage(
+      objectId: breakageId,
+      isFixed: true,
+    );
+    if (breakageObjectId != null) {
+      await _breakageDataProvider.updateBreakageInHive(
+          breakageId: breakageObjectId, isFixed: true);
+    }
+  }
+
+  Future<void> updateBreakage({
+    required String objectId,
+    String? title,
+    String? vehicleNode,
+    int? dangerLevel,
+    String? description,
+    bool? isFixed,
+    List<XFile>? imagesList,
+  }) async {
+    final breakageObjectId = await _breakageApiClient.updateBreakage(
+      objectId: objectId,
+      title: title,
+      vehicleNode: vehicleNode,
+      dangerLevel: dangerLevel,
+      description: description,
+      isFixed: isFixed,
+    );
+    Map<String, String> savedImagesIdUrl = {};
+    if (breakageObjectId != null) {
+      if (imagesList != null && imagesList.isNotEmpty) {
+        savedImagesIdUrl =
+            await _imagesApiClient.saveImagesToDatabase(imagesList);
+        await _photosToEntityApiClient.addPhotosRelationToEntity(
+          parseObjectName: ParseObjectNames.breakage,
+          entityObjectId: breakageObjectId,
+          imageObjectIdList: savedImagesIdUrl.keys.toList(),
+        );
+      }
+      await _breakageDataProvider.updateBreakageInHive(
+        breakageId: breakageObjectId,
+        title: title,
+        vehicleNode: vehicleNode,
+        dangerLevel: dangerLevel,
+        description: description,
+        isFixed: isFixed,
+        imagesIdUrl: savedImagesIdUrl,
+      );
+    }
+  }
+
+  Future<void> deleteBreakage(String breakageId) async {
+    await _breakageApiClient.deleteBreakage(breakageId);
+    await _breakageDataProvider.deleteBreakageFromHive(breakageId);
+  }
+
+  Future<List<Breakage>> downloadAllVehicleBreakagesAndShowActive() async {
+    final vehicleBreakagesFromServer = await _breakageApiClient
+        .getVehicleBreakageList(vehicleObjectId: _vehicleObjectId);
     await _breakageDataProvider
         .deleteUnnecessaryBreakagesFromHive(vehicleBreakagesFromServer);
     for (var breakage in vehicleBreakagesFromServer) {
       await _breakageDataProvider.putBreakageToHive(breakage);
     }
-    return await getVehicleBreakagesFromHive();
+    return await getActiveVehicleBreakagesFromHive();
   }
 
-  Future<List<Breakage>> getVehicleBreakagesFromHive() async {
+  Future<List<Breakage>> getActiveVehicleBreakagesFromHive() async {
     final vehicleBreakages =
-        await _breakageDataProvider.getBreakagesListFromHive();
+        await _breakageDataProvider.getActiveBreakagesListFromHive();
     vehicleBreakages.sort((b, a) => a.dangerLevel.compareTo(b.dangerLevel));
     return vehicleBreakages;
+  }
+
+  Future<int> getVehicleDangerLevel() async {
+    final activeBreakages = await getActiveVehicleBreakagesFromHive();
+    activeBreakages.sort((b, a) => a.dangerLevel.compareTo(b.dangerLevel));
+    if (activeBreakages.isNotEmpty) {
+      return activeBreakages[0].dangerLevel;
+    }
+    return -1;
   }
 
   Future<Breakage?> getBreakageFromHive(String breakageObjectId) async {

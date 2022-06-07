@@ -23,7 +23,7 @@ class BreakageAdapter extends TypeAdapter<Breakage> {
       dangerLevel: fields[3] as int,
       description: fields[4] as String,
       isFixed: fields[5] as bool,
-      photosURL: (fields[6] as List).cast<String>(),
+      imagesIdUrl: (fields[6] as Map).cast<String, String>(),
     );
   }
 
@@ -44,7 +44,7 @@ class BreakageAdapter extends TypeAdapter<Breakage> {
       ..writeByte(5)
       ..write(obj.isFixed)
       ..writeByte(6)
-      ..write(obj.photosURL);
+      ..write(obj.imagesIdUrl);
   }
 
   @override

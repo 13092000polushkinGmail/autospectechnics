@@ -69,6 +69,8 @@ class _BodyWidget extends StatelessWidget {
                 itemBuilder: (_, index) => TextFieldTemplateWidget(
                   controller: requiredEngineHoursWidgetConfigurationList[index]
                       .controller,
+                  labelText:
+                      requiredEngineHoursWidgetConfigurationList[index].title,
                   hintText:
                       requiredEngineHoursWidgetConfigurationList[index].title,
                 ),

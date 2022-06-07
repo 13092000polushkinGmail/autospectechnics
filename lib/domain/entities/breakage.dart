@@ -9,17 +9,17 @@ class Breakage extends HiveObject {
   @HiveField(0)
   final String objectId;
   @HiveField(1)
-  final String title;
+  String title;
   @HiveField(2)
-  final String vehicleNode;
+  String vehicleNode;
   @HiveField(3)
-  final int dangerLevel;
+  int dangerLevel;
   @HiveField(4)
-  final String description;
+  String description;
   @HiveField(5)
-  final bool isFixed;
+  bool isFixed;
   @HiveField(6)
-  final List<String> photosURL;
+  Map<String, String> imagesIdUrl;
   Breakage({
     required this.objectId,
     required this.title,
@@ -27,7 +27,7 @@ class Breakage extends HiveObject {
     required this.dangerLevel,
     required this.description,
     required this.isFixed,
-    required this.photosURL,
+    required this.imagesIdUrl,
   });
 
   static Breakage getBreakage({
@@ -42,13 +42,14 @@ class Breakage extends HiveObject {
     final description = breakageObject.get<String>('description') ??
         'Описание не предоставлено';
     final isFixed = breakageObject.get<bool>('isFixed') ?? false;
-    List<String> photosURL = [];
+    Map<String, String> imagesIdUrl = {};
     for (var imageParseObject in imagesList) {
+      final imageId = imageParseObject.objectId;
       String? imageURL;
       final imageFile = imageParseObject.get<ParseFileBase>('file');
       imageURL = imageFile?.url;
-      if (imageURL != null) {
-        photosURL.add(imageURL);
+      if (imageId != null && imageURL != null) {
+        imagesIdUrl[imageId] = imageURL;
       }
     }
 
@@ -59,32 +60,60 @@ class Breakage extends HiveObject {
       dangerLevel: dangerLevel,
       description: description,
       isFixed: isFixed,
-      photosURL: photosURL,
+      imagesIdUrl: imagesIdUrl,
     );
+  }
+
+  void updateBreakage(
+    String? title,
+    String? vehicleNode,
+    int? dangerLevel,
+    String? description,
+    bool? isFixed,
+    Map<String, String>? imagesIdUrl,
+  ) {
+    if (title != null) {
+      this.title = title;
+    }
+    if (vehicleNode != null) {
+      this.vehicleNode = vehicleNode;
+    }
+    if (dangerLevel != null) {
+      this.dangerLevel = dangerLevel;
+    }
+    if (description != null) {
+      this.description = description;
+    }
+    if (isFixed != null) {
+      this.isFixed = isFixed;
+    }
+    if (imagesIdUrl != null && imagesIdUrl.isNotEmpty) {
+      this.imagesIdUrl.addAll(imagesIdUrl);
+    }
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-
+  
     return other is Breakage &&
-        other.objectId == objectId &&
-        other.title == title &&
-        other.vehicleNode == vehicleNode &&
-        other.dangerLevel == dangerLevel &&
-        other.description == description &&
-        other.isFixed == isFixed &&
-        listEquals(other.photosURL, photosURL);
+      other.objectId == objectId &&
+      other.title == title &&
+      other.vehicleNode == vehicleNode &&
+      other.dangerLevel == dangerLevel &&
+      other.description == description &&
+      other.isFixed == isFixed &&
+      mapEquals(other.imagesIdUrl, imagesIdUrl);
   }
 
   @override
   int get hashCode {
     return objectId.hashCode ^
-        title.hashCode ^
-        vehicleNode.hashCode ^
-        dangerLevel.hashCode ^
-        description.hashCode ^
-        isFixed.hashCode ^
-        photosURL.hashCode;
+      title.hashCode ^
+      vehicleNode.hashCode ^
+      dangerLevel.hashCode ^
+      description.hashCode ^
+      isFixed.hashCode ^
+      imagesIdUrl.hashCode;
   }
 }

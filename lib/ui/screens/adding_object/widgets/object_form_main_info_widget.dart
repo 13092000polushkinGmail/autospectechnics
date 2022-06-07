@@ -1,6 +1,7 @@
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_several_photos_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/form_widgets/several_photos_from_server_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/text_field_template_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/stepper_widget.dart';
 import 'package:autospectechnics/ui/screens/adding_object/adding_object_view_model.dart';
@@ -42,8 +43,10 @@ class _BodyWidget extends StatelessWidget {
     final model = context.read<AddingObjectViewModel>();
     final stepperConfiguration =
         context.select((AddingObjectViewModel vm) => vm.stepperConfiguration);
-    final imageList =
-        context.select((AddingObjectViewModel vm) => vm.imageList);
+    final pickedImageList =
+        context.select((AddingObjectViewModel vm) => vm.pickedImageList);
+    final imagesFromServerIdURLs =
+        context.select((AddingObjectViewModel vm) => vm.imagesFromServerIdURLs);
     final startDate =
         context.select((AddingObjectViewModel vm) => vm.startDate);
     final finishDate =
@@ -53,9 +56,23 @@ class _BodyWidget extends StatelessWidget {
       children: [
         StepperWidget(configuration: stepperConfiguration),
         const SizedBox(height: 32),
-        AddingSeveralPhotosWidget(
-          imageList: imageList,
-          onAddingTap: () => model.pickImage(context: context),
+        SizedBox(
+          height: 120,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              AddingSeveralPhotosWidget(
+                imageList: pickedImageList,
+                onAddingTap: () => model.pickImage(context: context),
+                onDeletePhotoTap: model.deleteImageFile,
+              ),
+              const SizedBox(width: 8),
+              SeveralPhotosFromServerWidget(
+                imageIdURLs: imagesFromServerIdURLs,
+                onDeletePhotoTap: model.deleteImageFromServer,
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 32),
         TextFieldTemplateWidget(
@@ -124,6 +141,7 @@ class _BodyWidget extends StatelessWidget {
         TextFieldTemplateWidget(
           controller: model.descriptionTextControler,
           hintText: 'Описание работ',
+          maxLines: 5,
         ),
       ],
     );

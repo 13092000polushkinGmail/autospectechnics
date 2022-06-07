@@ -55,6 +55,7 @@ class ErrorDialogWidget {
   }) {
     showDialog<AlertDialog>(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) => AlertDialog(
         title: Text(title),
         content: Text(errorMessage),

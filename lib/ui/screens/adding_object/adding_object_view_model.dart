@@ -1,3 +1,5 @@
+import 'package:autospectechnics/domain/entities/building_object.dart';
+import 'package:autospectechnics/domain/services/vehicle_bulding_object_service.dart';
 import 'package:flutter/material.dart';
 
 import 'package:autospectechnics/domain/date_formatter.dart';
@@ -14,9 +16,12 @@ class AddingObjectViewModel extends ChangeNotifier {
   final _imageService = ImageService();
   final _buildingObjectService = BuildingObjectService();
   final _vehicleService = VehicleService();
+  late final _vehicleBuildingObjectService =
+      VehicleBuildingObjectService(_buildingObjectId);
 
-  var _currentTabIndex = 0;
-  var _maxPickedTabIndex = 0;
+  BuildingObject? _buildingObject;
+  int _currentTabIndex = 0;
+  int _maxPickedTabIndex = 0;
   bool _isLoadingProgress = false;
   DateTime? _startDate;
   DateTime? _finishDate;
@@ -28,7 +33,17 @@ class AddingObjectViewModel extends ChangeNotifier {
   final titleTextController = TextEditingController();
   final descriptionTextControler = TextEditingController();
 
-  AddingObjectViewModel(BuildContext context) {
+  Map<String, String> imagesFromServerIdURLs = {};
+  List<String> imagesIDsToDelete = [];
+
+  final String _buildingObjectId;
+  AddingObjectViewModel(
+    this._buildingObjectId,
+    BuildContext context,
+  ) {
+    if (_buildingObjectId != '') {
+      getBuildingObjectInfo(context);
+    }
     getVehicles(context);
   }
 
@@ -36,7 +51,7 @@ class AddingObjectViewModel extends ChangeNotifier {
   bool get isLoadingProgress => _isLoadingProgress;
   String get startDate => DateFormatter.getFormattedDate(_startDate);
   String get finishDate => DateFormatter.getFormattedDate(_finishDate);
-  List<Image> get imageList => _imageService.imageList;
+  List<Image> get pickedImageList => _imageService.imageList;
   int get vehiclesListLength => _vehiclesList.length;
 
   StepperWidgetConfiguration get stepperConfiguration =>
@@ -49,9 +64,14 @@ class AddingObjectViewModel extends ChangeNotifier {
 
   NecessaryVehicleWidgetConfiguration getVehicleWidgetConfiguration(int index) {
     final vehicleWithIsActiveFlag = _vehiclesList[index];
+    final imageIdUrl = vehicleWithIsActiveFlag.vehicle.imageIdUrl;
+    String? imageURL;
+    if (imageIdUrl.isNotEmpty) {
+      imageURL = imageIdUrl.values.toList().first;
+    }
     return NecessaryVehicleWidgetConfiguration(
       isActive: vehicleWithIsActiveFlag.isActive,
-      imageURL: vehicleWithIsActiveFlag.vehicle.imageURL,
+      imageURL: imageURL,
       title: vehicleWithIsActiveFlag.vehicle.model,
     );
   }
@@ -131,6 +151,82 @@ class AddingObjectViewModel extends ChangeNotifier {
     }
   }
 
+  void deleteImageFile(
+    BuildContext context,
+    int imageIndex,
+  ) {
+    try {
+      _imageService.deleteImageFromFileList(imageIndex);
+      notifyListeners();
+    } catch (e) {
+      ErrorDialogWidget.showUnknownError(context);
+    }
+  }
+
+  void deleteImageFromServer(
+    BuildContext context,
+    String imageObjectId,
+  ) {
+    try {
+      imagesFromServerIdURLs.remove(imageObjectId);
+      imagesIDsToDelete.add(imageObjectId);
+      notifyListeners();
+    } catch (e) {
+      ErrorDialogWidget.showUnknownError(context);
+    }
+  }
+
+  Future<void> getBuildingObjectInfo(BuildContext context) async {
+    _isLoadingProgress = true;
+    notifyListeners();
+    try {
+      _buildingObject = await _buildingObjectService.getBuildingObjectFromHive(
+          buildingObjectId: _buildingObjectId);
+      if (_buildingObject == null) {
+        ErrorDialogWidget.showDataSyncingError(context);
+      }
+      final vehicleBuildingObjectList = await _vehicleBuildingObjectService
+          .getVehicleBuildingObjectListFromHive(_buildingObjectId);
+      for (var vehicleBuildingObject in vehicleBuildingObjectList) {
+        final vehicle = await _vehicleService.getVehicleFromHive(
+            vehicleObjectId: vehicleBuildingObject.vehicleId);
+        if (vehicle != null) {
+          _vehiclesList.removeWhere(
+              (vehicleWithFlag) => vehicleWithFlag.vehicle == vehicle);
+          _vehiclesList.add(
+            _VehicleWithIsActiveFlag(vehicle: vehicle, isActive: true),
+          );
+          _vehicleEngineHoursTextControllers[vehicle.objectId]?.text =
+              vehicleBuildingObject.requiredEngineHours.toString();
+        }
+      }
+
+      titleTextController.text = _buildingObject?.title ?? '';
+      _startDate = _buildingObject?.startDate ?? DateTime.now();
+      _finishDate = _buildingObject?.finishDate ?? DateTime.now();
+      descriptionTextControler.text = _buildingObject?.description ?? '';
+      imagesFromServerIdURLs = Map<String, String>.from(
+          _buildingObject?.imagesIdUrl ?? <String, String>{});
+    } on ApiClientException catch (exception) {
+      switch (exception.type) {
+        case ApiClientExceptionType.network:
+          ErrorDialogWidget.showConnectionError(context);
+          break;
+        case ApiClientExceptionType.emptyResponse:
+          ErrorDialogWidget.showEmptyResponseError(context);
+          break;
+        case ApiClientExceptionType.other:
+          ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+          break;
+      }
+    } catch (e) {
+      ErrorDialogWidget.showUnknownError(context);
+    }
+
+    _isLoadingProgress = false;
+    notifyListeners();
+  }
+
   Future<void> saveToDatabase(BuildContext context) async {
     _isLoadingProgress = true;
     notifyListeners();
@@ -191,14 +287,35 @@ class AddingObjectViewModel extends ChangeNotifier {
     }
 
     try {
-      await _buildingObjectService.createBuildingObject(
-        title: title,
-        startDate: _startDate!,
-        finishDate: _finishDate!,
-        description: description,
-        imagesList: _imageService.imageFileList,
-        vehicleEngineHours: vehicleEngineHours,
-      );
+      if (_buildingObjectId == '') {
+        await _buildingObjectService.createBuildingObject(
+          title: title,
+          startDate: _startDate!,
+          finishDate: _finishDate!,
+          description: description,
+          imagesList: _imageService.imageFileList,
+          vehicleEngineHours: vehicleEngineHours,
+        );
+      } else {
+        await _imageService.deleteImagesFromServer(imagesIDsToDelete);
+        for (var id in imagesIDsToDelete) {
+          _buildingObject?.imagesIdUrl.remove(id);
+        }
+        await _vehicleBuildingObjectService
+            .deleteVehicleBuildingObjectsOfBuildingObject(_buildingObjectId);
+        await _buildingObjectService.updateBuildingObject(
+          objectId: _buildingObjectId,
+          title: title == _buildingObject?.title ? null : title,
+          startDate:
+              _startDate == _buildingObject?.startDate ? null : _startDate,
+          finishDate:
+              _finishDate == _buildingObject?.finishDate ? null : _finishDate,
+          description:
+              description == _buildingObject?.description ? null : description,
+          imagesList: _imageService.imageFileList,
+          vehicleEngineHours: vehicleEngineHours,
+        );
+      }
       Navigator.of(context).pop();
     } on ApiClientException catch (exception) {
       switch (exception.type) {
@@ -236,6 +353,14 @@ class AddingObjectViewModel extends ChangeNotifier {
   void setCurrentTabIndex(int value) {
     _currentTabIndex = value;
     notifyListeners();
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _vehicleService.dispose();
+    await _vehicleBuildingObjectService.dispose();
+    await _buildingObjectService.dispose();
+    super.dispose();
   }
 }
 

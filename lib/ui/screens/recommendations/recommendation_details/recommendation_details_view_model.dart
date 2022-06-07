@@ -4,7 +4,10 @@ import 'package:autospectechnics/domain/entities/recommendation.dart';
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/vehicle_node_names.dart';
 import 'package:autospectechnics/domain/services/recommendation_service.dart';
+import 'package:autospectechnics/ui/global_widgets/confirm_dialog_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
+import 'package:autospectechnics/ui/navigation/arguments_configurations/recommendation_details_arguments_configuration.dart';
+import 'package:autospectechnics/ui/navigation/main_navigation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
@@ -66,6 +69,41 @@ class RecommendationDetailsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> onDeleteButtonTap(BuildContext context) async {
+    final isConfirmed = await ConfirmDialogWidget.isConfirmed(context: context);
+    if (!isConfirmed) return;
+    try {
+      await _recommendationService
+          .deleteRecommendation(_recommendationObjectId);
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
+    } on ApiClientException catch (exception) {
+      switch (exception.type) {
+        case ApiClientExceptionType.network:
+          ErrorDialogWidget.showConnectionError(context);
+          break;
+        case ApiClientExceptionType.emptyResponse:
+          ErrorDialogWidget.showEmptyResponseError(context);
+          break;
+        case ApiClientExceptionType.other:
+          ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+          break;
+      }
+    } catch (e) {
+      ErrorDialogWidget.showUnknownError(context);
+    }
+  }
+
+  void openUpdatingRecommendationScreen(BuildContext context) {
+    Navigator.of(context).pushNamed(
+      MainNavigationRouteNames.addingRecommendationScreen,
+      arguments: RecommendationDetailsArgumentsConfiguration(
+        vehicleObjectId: _vehicleObjectId,
+        recommendationObjectId: _recommendationObjectId,
+      ),
+    );
+  }
+
   @override
   Future<void> dispose() async {
     await _recommendationService.dispose();
@@ -84,6 +122,6 @@ class RecommendationWidgetConfiguration {
     description = recommendation?.description ?? '';
     final vehicleNode = recommendation?.vehicleNode ?? '';
     vehicleNodeIconName = VehicleNodeNames.getIconName(vehicleNode);
-    photosURL = recommendation?.photosURL ?? [];
+    photosURL = recommendation?.imagesIdUrl.values.toList() ?? [];
   }
 }

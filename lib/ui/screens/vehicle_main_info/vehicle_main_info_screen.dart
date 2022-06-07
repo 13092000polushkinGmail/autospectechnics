@@ -1,4 +1,5 @@
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/top_circular_progress_indicator.dart';
 import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:autospectechnics/ui/screens/vehicle_main_info/vehicle_main_info_view_model.dart';
@@ -13,12 +14,19 @@ class VehicleMainInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final model = context.read<VehicleMainInfoViewModel>();
+    return Scaffold(
       appBar: AppBarWidget(
         title: 'Авто',
         hasBackButton: true,
+        onDeleteButtonTap: () => model.onDeleteButtonTap(context),
       ),
-      body: _BodyWidget(),
+      body: const _BodyWidget(),
+      floatingActionButton: FloatingButtonWidget(
+        child: const Text('Записать моточасы и пробег'),
+        onPressed: () => model.openWritingEngineHoursScreen(context),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
@@ -37,7 +45,7 @@ class _BodyWidget extends StatelessWidget {
     return Stack(
       children: [
         ListView(
-          padding: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.only(bottom: 88),
           children: [
             Stack(
               children: [
@@ -163,6 +171,7 @@ class _VehicleDataWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<VehicleMainInfoViewModel>();
     final configuration = context.select(
         (VehicleMainInfoViewModel vm) => vm.vehicleDataWidgetConfiguration);
     return _InfoCardWidget(
@@ -171,6 +180,7 @@ class _VehicleDataWidget extends StatelessWidget {
       upperRightText: configuration.licensePlate,
       lowerLeftText: configuration.mileage,
       lowerRightText: configuration.description,
+      onTap: () => model.openVehicleInformationScreen(context),
     );
   }
 }
@@ -218,7 +228,7 @@ class _InfoCardWidget extends StatelessWidget {
                         _SmallTextWidget(text: upperLeftText),
                         const SizedBox(width: 8),
                         if (upperRightText.isNotEmpty)
-                        _SmallTextWidget(text: upperRightText),
+                          _SmallTextWidget(text: upperRightText),
                       ],
                     ),
                     const SizedBox(height: 8),

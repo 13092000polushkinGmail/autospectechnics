@@ -42,13 +42,21 @@ class _BodyWidget extends StatelessWidget {
         context.select((BreakagesViewModel vm) => vm.breakageListLength);
     return isLoadingProgress
         ? const Center(child: CircularProgressIndicator())
-        : ListView.separated(
-            itemCount: breakageListLength,
-            itemBuilder: (_, index) => _BreakageCardWidget(index: index),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            padding:
-                const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-          );
+        : breakageListLength == 0
+            ? Center(
+                child: Text(
+                  'Активных поломок нет',
+                  style:
+                      AppTextStyles.regular16.copyWith(color: AppColors.black),
+                ),
+              )
+            : ListView.separated(
+                itemCount: breakageListLength,
+                itemBuilder: (_, index) => _BreakageCardWidget(index: index),
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                padding: const EdgeInsets.only(
+                    left: 16, right: 16, top: 16, bottom: 88),
+              );
   }
 }
 

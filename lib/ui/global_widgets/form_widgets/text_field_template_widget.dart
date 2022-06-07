@@ -6,12 +6,16 @@ import 'package:flutter/material.dart';
 class TextFieldTemplateWidget extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
+  final String? labelText;
+  final void Function()? onTap;
   final int maxLines;
   final TextInputType keyboardType;
   const TextFieldTemplateWidget({
     Key? key,
     required this.controller,
     required this.hintText,
+    this.labelText,
+    this.onTap,
     this.maxLines = 1,
     this.keyboardType = TextInputType.text,
   }) : super(key: key);
@@ -19,6 +23,7 @@ class TextFieldTemplateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      onTap: onTap,
       controller: controller,
       style: AppTextStyles.regular16.copyWith(color: AppColors.black),
       decoration: InputDecoration(
@@ -28,6 +33,7 @@ class TextFieldTemplateWidget extends StatelessWidget {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         isDense: true,
+        labelText: labelText,
         hintText: hintText,
         hintStyle: AppTextStyles.regular16.copyWith(color: AppColors.greyText),
       ),

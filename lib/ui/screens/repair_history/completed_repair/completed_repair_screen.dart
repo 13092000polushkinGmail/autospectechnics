@@ -1,4 +1,5 @@
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/photo_list_widget.dart';
 import 'package:autospectechnics/ui/screens/repair_history/completed_repair/completed_repair_view_model.dart';
 import 'package:autospectechnics/ui/theme/app_colors.dart';
@@ -12,12 +13,19 @@ class CompletedRepairScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final model = context.read<CompletedRepairViewModel>();
+    return Scaffold(
       appBar: AppBarWidget(
         title: 'Выполненная работа',
         hasBackButton: true,
+        onDeleteButtonTap: () => model.onDeleteButtonTap(context),
       ),
-      body: _BodyWidget(),
+      body: const _BodyWidget(),
+      floatingActionButton: FloatingButtonWidget(
+        child: const Text('Редактировать'),
+        onPressed: () => model.openUpdatingCompletedRepairScreen(context),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

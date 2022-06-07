@@ -37,6 +37,57 @@ class CompletedRepairApiClient {
     return completedRepair.objectId;
   }
 
+  Future<String?> updateCompletedRepair({
+    required String objectId,
+    String? title,
+    int? mileage,
+    String? description,
+    DateTime? date,
+    String? vehicleNode,
+  }) async {
+    var completedRepair = ParseObject(ParseObjectNames.completedRepair);
+    completedRepair.objectId = objectId;
+
+    if (title != null) {
+      completedRepair.set('title', title);
+    }
+
+    if (mileage != null) {
+      completedRepair.set('mileage', mileage);
+    }
+
+    if (description != null) {
+      completedRepair.set('description', description);
+    }
+
+    if (date != null) {
+      completedRepair.set('date', date);
+    }
+
+    if (vehicleNode != null) {
+      completedRepair.set('vehicleNode', vehicleNode);
+    }
+
+    if (title != null ||
+        mileage != null ||
+        vehicleNode != null ||
+        description != null ||
+        date != null) {
+      final ParseResponse apiResponse = await completedRepair.save();
+      ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    }
+    return completedRepair.objectId;
+  }
+
+  Future<void> deleteCompletedRepairFromDatabase(
+      String completedRepairId) async {
+    final parseCompletedRepair = ParseObject(ParseObjectNames.completedRepair)
+      ..objectId = completedRepairId;
+
+    final ParseResponse apiResponse = await parseCompletedRepair.delete();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+  }
+
   Future<List<CompletedRepair>> getCompletedRepairList({
     required String vehicleObjectId,
   }) async {

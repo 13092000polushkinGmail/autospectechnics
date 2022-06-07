@@ -11,6 +11,7 @@ class AppSvgs {
   static const String dumpTruck = 'assets/vectors/dump_truck.svg';
   static const String engine = 'assets/vectors/engine.svg';
   static const String excavator = 'assets/vectors/excavator.svg';
+  static const String fixIcon = 'assets/vectors/fix_icon.svg';
   static const String lowTonnageTruck = 'assets/vectors/low_tonnage_truck.svg';
   static const String mediumTonnageTruck =
       'assets/vectors/medium_tonnage_truck.svg';

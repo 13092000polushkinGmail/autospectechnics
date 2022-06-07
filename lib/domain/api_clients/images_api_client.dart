@@ -46,7 +46,6 @@ class ImagesApiClient {
     return savedImagesIdUrl;
   }
 
-  //TODO Еще не тестировал
   Future<void> deleteImagesFromDatabase(List<String> imagesObjectIds) async {
     for (var imageId in imagesObjectIds) {
       final parseImage = ParseObject(ParseObjectNames.image)

@@ -50,7 +50,7 @@ class RecommendationService {
         vehicleNode: vehicleNode,
         description: description,
         isCompleted: isCompleted,
-        photosURL: savedImagesIdUrl.values.toList(),
+        imagesIdUrl: savedImagesIdUrl,
       );
       await _recommendationDataProvider.putRecommendationToHive(recommendation);
     }
@@ -70,8 +70,8 @@ class RecommendationService {
   Future<List<Recommendation>> getVehicleRecommendationsFromHive() async {
     final vehicleRecommendations =
         await _recommendationDataProvider.getRecommendationsListFromHive();
-    //TODO Нужна ли сортировка, не знаю, надо проверить как отображаются
-    // vehicleBreakages.sort((b, a) => a.dangerLevel.compareTo(b.dangerLevel));
+    vehicleRecommendations
+        .sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
     return vehicleRecommendations;
   }
 
@@ -88,32 +88,52 @@ class RecommendationService {
     return recommendationStream;
   }
 
+  Future<void> updateRecommendation({
+    required String objectId,
+    String? title,
+    String? vehicleNode,
+    String? description,
+    bool? isCompleted,
+    List<XFile>? imagesList,
+  }) async {
+    final recommendationObjectId =
+        await _recommendationApiClient.updateRecommendationInDatabase(
+      objectId: objectId,
+      title: title,
+      vehicleNode: vehicleNode,
+      description: description,
+      isCompleted: isCompleted,
+    );
+    Map<String, String> savedImagesIdUrl = {};
+    if (recommendationObjectId != null) {
+      if (imagesList != null && imagesList.isNotEmpty) {
+        savedImagesIdUrl =
+            await _imagesApiClient.saveImagesToDatabase(imagesList);
+        await _photosToEntityApiClient.addPhotosRelationToEntity(
+          parseObjectName: ParseObjectNames.recommendation,
+          entityObjectId: recommendationObjectId,
+          imageObjectIdList: savedImagesIdUrl.keys.toList(),
+        );
+      }
+      await _recommendationDataProvider.updateRecommendationInHive(
+        recommendationId: recommendationObjectId,
+        title: title,
+        vehicleNode: vehicleNode,
+        description: description,
+        isCompleted: isCompleted,
+        imagesIdUrl: savedImagesIdUrl,
+      );
+    }
+  }
+
+  Future<void> deleteRecommendation(String recommendationId) async {
+    await _recommendationApiClient
+        .deleteRecommendationFromDatabase(recommendationId);
+    await _recommendationDataProvider
+        .deleteRecommendationFromHive(recommendationId);
+  }
+
   Future<void> dispose() async {
     await _recommendationDataProvider.dispose();
   }
-
-  // Future<void> updateRecommendation({
-  //   required String objectId,
-  //   String? title,
-  //   String? vehicleNode,
-  //   String? description,
-  //   bool? isCompleted,
-  //   List<XFile>? imagesList,
-  // }) async {
-  //   await _recommendationApiClient.updateRecommendationInDatabase(
-  //       objectId: objectId,
-  //       title: title,
-  //       vehicleNode: vehicleNode,
-  //       description: description,
-  //       isCompleted: isCompleted);
-  //   //TODO С изображениями сложнее, нужно либо оставить все старые, либо удалить каие-то старые и добавить новые, либо просто удалить, этот метод нерабочий
-  //   if (imagesList != null && imagesList.isNotEmpty) {
-  //     await _imagesApiClient.saveImagesToDatabase(imagesList);
-  //     await _photosToEntityApiClient.addPhotosRelationToEntity(
-  //       parseObjectName: ParseObjectNames.recommendation,
-  //       entityObjectId: _recommendationApiClient.recommendationObjectId,
-  //       imageObjectIdList: _imagesApiClient.savedImagesObjectIds,
-  //     );
-  //   }
-  // }
 }

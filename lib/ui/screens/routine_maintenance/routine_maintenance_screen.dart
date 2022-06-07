@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
-import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/remaining_resource_progress_bar_widget.dart';
 import 'package:autospectechnics/ui/screens/routine_maintenance/routine_maintenance_view_model.dart';
 import 'package:autospectechnics/ui/theme/app_box_decorations.dart';
@@ -14,18 +13,12 @@ class RoutineMaintenanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final model = context.read<RoutineMaintenanceViewModel>();
-    return Scaffold(
-      appBar: const AppBarWidget(
+    return const Scaffold(
+      appBar: AppBarWidget(
         title: 'ТО',
         hasBackButton: true,
       ),
-      body: const _BodyWidget(),
-      floatingActionButton: FloatingButtonWidget(
-        child: const Text('Записать моточасы и пробег'),
-        onPressed: () => model.openWritingEngineHoursScreen(context),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      body: _BodyWidget(),
     );
   }
 }
@@ -39,18 +32,25 @@ class _BodyWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDataLoading =
         context.select((RoutineMaintenanceViewModel vm) => vm.isDataLoading);
-    final vehicleNodeDataList = context
-        .select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeDataList);
+    final vehicleNodeAmount = context
+        .select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeAmount);
     return isDataLoading
         ? const Center(child: CircularProgressIndicator())
-        : ListView.separated(
-            padding:
-                const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-            itemCount: vehicleNodeDataList.length,
-            itemBuilder: (_, index) =>
-                _VehicleNodeWidget(vehicleNodeDataIndex: index),
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-          );
+        : vehicleNodeAmount == 0
+            ? Center(
+                child: Text(
+                  'Регламенты не заданы',
+                  style:
+                      AppTextStyles.regular16.copyWith(color: AppColors.black),
+                ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: vehicleNodeAmount,
+                itemBuilder: (_, index) =>
+                    _VehicleNodeWidget(vehicleNodeDataIndex: index),
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
+              );
   }
 }
 
@@ -101,86 +101,84 @@ class __VehicleNodeWidgetState extends State<_VehicleNodeWidget>
 
   @override
   Widget build(BuildContext context) {
-    final vehicleNodeDataList = context
-        .select((RoutineMaintenanceViewModel vm) => vm.vehicleNodeDataList);
-    final routineMaintenanceList =
-        vehicleNodeDataList[widget.vehicleNodeDataIndex].routineMaintenanceList;
-    return DecoratedBox(
-      decoration: AppBoxDecorations.cardBoxDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            InkWell(
-              onTap: () => _toggleContainer(),
-              child: _VehicleNodeHeaderWidget(
-                isActive: _isActive,
-                iconName:
-                    vehicleNodeDataList[widget.vehicleNodeDataIndex].iconName,
-                title: vehicleNodeDataList[widget.vehicleNodeDataIndex].title,
+    final routineMaintenanceList = context.select(
+        (RoutineMaintenanceViewModel vm) =>
+            vm.getRoutineMaintenanceList(widget.vehicleNodeDataIndex));
+    return routineMaintenanceList != null
+        ? DecoratedBox(
+            decoration: AppBoxDecorations.cardBoxDecoration,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  InkWell(
+                    onTap: () => _toggleContainer(),
+                    child: _VehicleNodeHeaderWidget(
+                      isActive: _isActive,
+                      index: widget.vehicleNodeDataIndex,
+                    ),
+                  ),
+                  SizeTransition(
+                    sizeFactor: _animation,
+                    axis: Axis.vertical,
+                    child: ListView.separated(
+                      itemCount: routineMaintenanceList.length,
+                      itemBuilder: (_, index) => _WorkInfoWidget(
+                        vehicleNodeDataIndex: widget.vehicleNodeDataIndex,
+                        routineMaintenanceIndex: index,
+                      ),
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizeTransition(
-              sizeFactor: _animation,
-              axis: Axis.vertical,
-              child: ListView.separated(
-                itemCount: routineMaintenanceList.length,
-                itemBuilder: (_, index) => _WorkInfoWidget(
-                  vehicleNodeDataIndex: widget.vehicleNodeDataIndex,
-                  routineMaintenanceIndex: index,
-                ),
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+          )
+        : const SizedBox.shrink();
   }
 }
 
 class _VehicleNodeHeaderWidget extends StatelessWidget {
   final bool isActive;
-  final String iconName;
-  final String title;
+  final int index;
 
   const _VehicleNodeHeaderWidget({
     Key? key,
     required this.isActive,
-    required this.iconName,
-    required this.title,
+    required this.index,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.blue : AppColors.black;
-    final arrowIcon = isActive
-        ? Icons.keyboard_arrow_up_rounded
-        : Icons.keyboard_arrow_down_rounded;
-    return Row(
-      children: [
-        SvgPicture.asset(
-          iconName,
-          color: color,
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            title,
-            style: AppTextStyles.regular20.copyWith(
-              color: color,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Icon(
-          arrowIcon,
-          color: color,
-        ),
-      ],
-    );
+    final model = context.read<RoutineMaintenanceViewModel>();
+    final configuration =
+        model.getVehicleNodeHeaderWidgetConfiguration(index, isActive);
+    return configuration != null
+        ? Row(
+            children: [
+              SvgPicture.asset(
+                configuration.iconName,
+                color: configuration.color,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  configuration.title,
+                  style: AppTextStyles.regular20.copyWith(
+                    color: configuration.color,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                configuration.arrowIcon,
+                color: configuration.color,
+              ),
+            ],
+          )
+        : const SizedBox.shrink();
   }
 }
 
@@ -196,63 +194,58 @@ class _WorkInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final model = context.watch<RoutineMaintenanceViewModel>();
-    final vehicleNodeDataList = model.vehicleNodeDataList;
-    final routineMaintenanceList =
-        vehicleNodeDataList[vehicleNodeDataIndex].routineMaintenanceList;
-    final routineMaintenance = routineMaintenanceList[routineMaintenanceIndex];
-    final isRoutineMaintenanceUpdating = context.select(
-        (RoutineMaintenanceViewModel vm) => vm.isRoutineMaintenanceUpdating);
-    final engineHoursReserve =
-        routineMaintenance.periodicity - routineMaintenance.engineHoursValue;
-    final progressIndicatorValue = 1 -
-        routineMaintenance.engineHoursValue / routineMaintenance.periodicity;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    // final isRoutineMaintenanceUpdating = context.select(
+    //     (RoutineMaintenanceViewModel vm) => vm.isRoutineMaintenanceUpdating);
+    final model = context.read<RoutineMaintenanceViewModel>();
+    final configuration = model.getWorkInfoWidgetConfiguration(
+        vehicleNodeDataIndex, routineMaintenanceIndex);
+    return configuration != null
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                routineMaintenance.title,
-                style: AppTextStyles.regular16.copyWith(
-                  color: AppColors.black,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      configuration.title,
+                      style: AppTextStyles.regular16.copyWith(
+                        color: AppColors.black,
+                      ),
+                    ),
+                    Text(
+                      configuration.engineHoursReserve,
+                      style: AppTextStyles.hint.copyWith(
+                        color: AppColors.greyText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    RemainingResourceProgressBarWidget(
+                      value: configuration.progressIndicatorValue,
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                'Осталось $engineHoursReserve/${routineMaintenance.periodicity} мч',
-                style: AppTextStyles.hint.copyWith(
-                  color: AppColors.greyText,
+              OutlinedButton(
+                onPressed: () => model.resetEngineHoursValue(
+                  vehicleNodeDataIndex: vehicleNodeDataIndex,
+                  routineMaintenanceIndex: routineMaintenanceIndex,
+                  context: context,
                 ),
-              ),
-              const SizedBox(height: 4),
-              RemainingResourceProgressBarWidget(
-                value: progressIndicatorValue,
+                //TODO Кнопки обновления не меняются на крутилки. Оставил, потому что надо исправлять более важные недоработки
+                child: configuration.isUpdating
+                    ? const CircularProgressIndicator()
+                    : const Icon(Icons.refresh),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: AppColors.blue,
+                  fixedSize: const Size(40, 40),
+                  primary: AppColors.white,
+                  shape: const CircleBorder(),
+                  side: BorderSide.none,
+                ),
               ),
             ],
-          ),
-        ),
-        OutlinedButton(
-          onPressed: () => model.resetEngineHoursValue(
-            routineMaintenanceObjectId: routineMaintenance.objectId,
-            vehicleNodeDataIndex: vehicleNodeDataIndex,
-            routineMaintenanceIndex: routineMaintenanceIndex,
-            context: context,
-          ),
-          //TODO Применяется ко всем кнопкам обновления, они крутятся одновременно, подумать, как исправить
-          child: isRoutineMaintenanceUpdating
-              ? const CircularProgressIndicator()
-              : const Icon(Icons.refresh),
-          style: OutlinedButton.styleFrom(
-            backgroundColor: AppColors.blue,
-            fixedSize: const Size(40, 40),
-            primary: AppColors.white,
-            shape: const CircleBorder(),
-            side: BorderSide.none,
-          ),
-        ),
-      ],
-    );
+          )
+        : const SizedBox.shrink();
   }
 }

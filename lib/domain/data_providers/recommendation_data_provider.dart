@@ -28,6 +28,33 @@ class RecommendationDataProvider {
     }
   }
 
+  Future<void> updateRecommendationInHive({
+    required String recommendationId,
+    String? title,
+    String? vehicleNode,
+    String? description,
+    bool? isCompleted,
+    Map<String, String>? imagesIdUrl,
+  }) async {
+    final box = await _futureBox;
+    final recommendation = box.get(recommendationId);
+    if (recommendation != null) {
+      recommendation.updateRecommendation(
+        title,
+        vehicleNode,
+        description,
+        isCompleted,
+        imagesIdUrl,
+      );
+      await recommendation.save();
+    }
+  }
+
+  Future<void> deleteRecommendationFromHive(String recommendationId) async {
+    final box = await _futureBox;
+    await box.delete(recommendationId);
+  }
+
   Future<List<Recommendation>> getRecommendationsListFromHive() async {
     final box = await _futureBox;
     final list = box.values.toList();

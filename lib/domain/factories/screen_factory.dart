@@ -26,10 +26,12 @@ import 'package:autospectechnics/ui/screens/repair_history/repair_history_screen
 import 'package:autospectechnics/ui/screens/repair_history/repair_history_view_model.dart';
 import 'package:autospectechnics/ui/screens/routine_maintenance/routine_maintenance_screen.dart';
 import 'package:autospectechnics/ui/screens/routine_maintenance/routine_maintenance_view_model.dart';
-import 'package:autospectechnics/ui/screens/routine_maintenance/writing_engine_hours/writing_engine_hours_screen.dart';
-import 'package:autospectechnics/ui/screens/routine_maintenance/writing_engine_hours/writing_engine_hours_view_model.dart';
+import 'package:autospectechnics/ui/screens/vehicle_information/vehicle_information_screen.dart';
+import 'package:autospectechnics/ui/screens/vehicle_information/vehicle_information_view_model.dart';
 import 'package:autospectechnics/ui/screens/vehicle_main_info/vehicle_main_info_screen.dart';
 import 'package:autospectechnics/ui/screens/vehicle_main_info/vehicle_main_info_view_model.dart';
+import 'package:autospectechnics/ui/screens/vehicle_main_info/writing_engine_hours/writing_engine_hours_screen.dart';
+import 'package:autospectechnics/ui/screens/vehicle_main_info/writing_engine_hours/writing_engine_hours_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -41,9 +43,9 @@ class ScreenFactory {
     );
   }
 
-  Widget makeAddingVehicle() {
+  Widget makeAddingVehicle(String vehicleId) {
     return ChangeNotifierProvider(
-      create: (_) => AddingVehicleViewModel(),
+      create: (context) => AddingVehicleViewModel(vehicleId, context),
       child: const AddingVehicleScreen(),
     );
   }
@@ -52,6 +54,14 @@ class ScreenFactory {
     return ChangeNotifierProvider(
       create: (context) => VehicleMainInfoViewModel(vehicleObjectId, context),
       child: const VehicleMainInfoScreen(),
+    );
+  }
+
+  Widget makeVehicleInformation(String vehicleObjectId) {
+    return ChangeNotifierProvider(
+      create: (context) =>
+          VehicleInformationViewModel(vehicleObjectId, context),
+      child: const VehicleInformationScreen(),
     );
   }
 
@@ -71,9 +81,14 @@ class ScreenFactory {
     );
   }
 
-  Widget makeAddingRecommendation(String vehicleObjectId) {
+  Widget makeAddingRecommendation(
+      String vehicleObjectId, String recommendationObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => AddingRecommendationViewModel(vehicleObjectId),
+      create: (context) => AddingRecommendationViewModel(
+        vehicleObjectId,
+        recommendationObjectId,
+        context,
+      ),
       child: const AddingRecommendationScreen(),
     );
   }
@@ -93,9 +108,13 @@ class ScreenFactory {
     );
   }
 
-  Widget makeAddingBreakage(String vehicleObjectId) {
+  Widget makeAddingBreakage(String vehicleObjectId, String breakageObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => AddingBreakageViewModel(vehicleObjectId),
+      create: (context) => AddingBreakageViewModel(
+        vehicleObjectId,
+        breakageObjectId,
+        context,
+      ),
       child: const AddingBreakageScreen(),
     );
   }
@@ -116,9 +135,14 @@ class ScreenFactory {
     );
   }
 
-  Widget makeAddingCompletedRepair(String vehicleObjectId) {
+  Widget makeAddingCompletedRepair(
+      String vehicleObjectId, String completedRepairObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => AddingCompletedRepairViewModel(vehicleObjectId),
+      create: (context) => AddingCompletedRepairViewModel(
+        vehicleObjectId,
+        completedRepairObjectId,
+        context,
+      ),
       child: const AddingCompletedRepairScreen(),
     );
   }
@@ -131,9 +155,10 @@ class ScreenFactory {
     );
   }
 
-  Widget makeWritingEngineHours() {
+  Widget makeWritingEngineHours(String vehicleObjectId) {
     return ChangeNotifierProvider(
-      create: (_) => WritingEngineHoursViewModel(),
+      create: (context) =>
+          WritingEngineHoursViewModel(vehicleObjectId, context),
       child: const WritingEngineHoursScreen(),
     );
   }
@@ -145,9 +170,9 @@ class ScreenFactory {
     );
   }
 
-  Widget makeAddingObject() {
+  Widget makeAddingObject(String buildingObjectId) {
     return ChangeNotifierProvider(
-      create: (context) => AddingObjectViewModel(context),
+      create: (context) => AddingObjectViewModel(buildingObjectId, context),
       child: const AddingObjectScreen(),
     );
   }

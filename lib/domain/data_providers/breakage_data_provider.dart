@@ -27,10 +27,45 @@ class BreakageDataProvider {
     }
   }
 
-  Future<List<Breakage>> getBreakagesListFromHive() async {
+  Future<void> updateBreakageInHive({
+    required String breakageId,
+    String? title,
+    String? vehicleNode,
+    int? dangerLevel,
+    String? description,
+    bool? isFixed,
+    Map<String, String>? imagesIdUrl,
+  }) async {
     final box = await _futureBox;
-    final list = box.values.toList();
-    return list;
+    final breakage = box.get(breakageId);
+    if (breakage != null) {
+      breakage.updateBreakage(
+        title,
+        vehicleNode,
+        dangerLevel,
+        description,
+        isFixed,
+        imagesIdUrl,
+      );
+      await breakage.save();
+    }
+  }
+
+  Future<void> deleteBreakageFromHive(String breakageId) async {
+    final box = await _futureBox;
+    await box.delete(breakageId);
+  }
+
+  Future<List<Breakage>> getActiveBreakagesListFromHive() async {
+    final box = await _futureBox;
+    final activeBreakages = <Breakage>[];
+    final allBreakages = box.values.toList();
+    for (var breakage in allBreakages) {
+      if (!breakage.isFixed) {
+        activeBreakages.add(breakage);
+      }
+    }
+    return activeBreakages;
   }
 
   Future<Breakage?> getBreakageFromHive(String breakageId) async {

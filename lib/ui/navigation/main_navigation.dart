@@ -7,7 +7,13 @@ import 'package:flutter/material.dart';
 class MainNavigationRouteNames {
   static const mainTabsScreen = '/';
   static const addingVehicleScreen = '/adding_vehicle_screen';
+
   static const vehicleMainInfoScreen = '/vehicle_main_info_screen';
+  static const writingEngineHoursScreen =
+      '/vehicle_main_info_screen/writing_engine_hours_screen';
+
+  static const vehicleInformationScreen =
+      '/vehicle_main_info_screen/vehicle_information_screen';
 
   static const recommendationsScreen =
       '/vehicle_main_info_screen/recommendations_screen';
@@ -31,8 +37,6 @@ class MainNavigationRouteNames {
 
   static const routineMaintenanceScreen =
       '/vehicle_main_info_screen/routine_maintenance_screen';
-  static const writingEngineHoursScreen =
-      '/vehicle_main_info_screen/routine_maintenance_screen/writing_engine_hours_screen';
 
   static const objectMainInfoScreen = '/object_main_info_screen';
   static const addingObjectScreen = '/adding_object_screen';
@@ -44,8 +48,8 @@ class MainNavigation {
   final routes = <String, Widget Function(BuildContext)>{
     MainNavigationRouteNames.mainTabsScreen: (_) =>
         _screenFactory.makeMainTabs(),
-    MainNavigationRouteNames.addingVehicleScreen: (_) =>
-        _screenFactory.makeAddingVehicle(),
+    // MainNavigationRouteNames.addingVehicleScreen: (_) =>
+    //     _screenFactory.makeAddingVehicle(),
 
     // MainNavigationRouteNames.recommendationsScreen: (_) =>
     //     _screenFactory.makeRecommendations(),
@@ -67,13 +71,13 @@ class MainNavigation {
     //     _screenFactory.makeAddingCompletedRepair(),
 
     // MainNavigationRouteNames.routineMaintenanceScreen: (_) => _screenFactory.makeRoutineMaintenance(),
-    MainNavigationRouteNames.writingEngineHoursScreen: (_) =>
-        _screenFactory.makeWritingEngineHours(),
+    // MainNavigationRouteNames.writingEngineHoursScreen: (_) =>
+    //     _screenFactory.makeWritingEngineHours(),
 
     // MainNavigationRouteNames.objectMainInfoScreen: (_) =>
     //     _screenFactory.makeObjectMainInfo(),
-    MainNavigationRouteNames.addingObjectScreen: (_) =>
-        _screenFactory.makeAddingObject(),
+    // MainNavigationRouteNames.addingObjectScreen: (_) =>
+    //     _screenFactory.makeAddingObject(),
   };
 
   Route<Object> onGenerateRoute(RouteSettings settings) {
@@ -84,12 +88,32 @@ class MainNavigation {
         return MaterialPageRoute(
           builder: (_) => _screenFactory.makeVehicleMainInfo(vehicleObjectId),
         );
+      case MainNavigationRouteNames.writingEngineHoursScreen:
+        final arguments = settings.arguments;
+        final vehicleObjectId = arguments is String ? arguments : '';
+        return MaterialPageRoute(
+          builder: (_) =>
+              _screenFactory.makeWritingEngineHours(vehicleObjectId),
+        );
       case MainNavigationRouteNames.routineMaintenanceScreen:
         final arguments = settings.arguments;
         final vehicleObjectId = arguments is String ? arguments : '';
         return MaterialPageRoute(
           builder: (_) =>
               _screenFactory.makeRoutineMaintenance(vehicleObjectId),
+        );
+      case MainNavigationRouteNames.addingVehicleScreen:
+        final arguments = settings.arguments;
+        final vehicleObjectId = arguments is String ? arguments : '';
+        return MaterialPageRoute(
+          builder: (_) => _screenFactory.makeAddingVehicle(vehicleObjectId),
+        );
+      case MainNavigationRouteNames.vehicleInformationScreen:
+        final arguments = settings.arguments;
+        final vehicleObjectId = arguments is String ? arguments : '';
+        return MaterialPageRoute(
+          builder: (_) =>
+              _screenFactory.makeVehicleInformation(vehicleObjectId),
         );
       case MainNavigationRouteNames.recommendationsScreen:
         final arguments = settings.arguments;
@@ -111,10 +135,17 @@ class MainNavigation {
         );
       case MainNavigationRouteNames.addingRecommendationScreen:
         final arguments = settings.arguments;
-        final vehicleObjectId = arguments is String ? arguments : '';
+        String vehicleObjectId = '';
+        String recommendationObjectId = '';
+        if (arguments is RecommendationDetailsArgumentsConfiguration) {
+          vehicleObjectId = arguments.vehicleObjectId;
+          recommendationObjectId = arguments.recommendationObjectId;
+        } else {
+          vehicleObjectId = arguments is String ? arguments : '';
+        }
         return MaterialPageRoute(
-          builder: (_) =>
-              _screenFactory.makeAddingRecommendation(vehicleObjectId),
+          builder: (_) => _screenFactory.makeAddingRecommendation(
+              vehicleObjectId, recommendationObjectId),
         );
       case MainNavigationRouteNames.breakagesScreen:
         final arguments = settings.arguments;
@@ -136,9 +167,17 @@ class MainNavigation {
         );
       case MainNavigationRouteNames.addingBreakageScreen:
         final arguments = settings.arguments;
-        final vehicleObjectId = arguments is String ? arguments : '';
+        String vehicleObjectId = '';
+        String breakageObjectId = '';
+        if (arguments is BreakageDetailsArgumentsConfiguration) {
+          vehicleObjectId = arguments.vehicleObjectId;
+          breakageObjectId = arguments.breakageObjectId;
+        } else {
+          vehicleObjectId = arguments is String ? arguments : '';
+        }
         return MaterialPageRoute(
-          builder: (_) => _screenFactory.makeAddingBreakage(vehicleObjectId),
+          builder: (_) => _screenFactory.makeAddingBreakage(
+              vehicleObjectId, breakageObjectId),
         );
       case MainNavigationRouteNames.repairHistoryScreen:
         final arguments = settings.arguments;
@@ -162,16 +201,29 @@ class MainNavigation {
         );
       case MainNavigationRouteNames.addingCompletedRepairScreen:
         final arguments = settings.arguments;
-        final vehicleObjectId = arguments is String ? arguments : '';
+        String vehicleObjectId = '';
+        String completedRepairObjectId = '';
+        if (arguments is CompletedRepairArgumentsConfiguration) {
+          vehicleObjectId = arguments.vehicleObjectId;
+          completedRepairObjectId = arguments.completedRepairObjectId;
+        } else {
+          vehicleObjectId = arguments is String ? arguments : '';
+        }
         return MaterialPageRoute(
-          builder: (_) =>
-              _screenFactory.makeAddingCompletedRepair(vehicleObjectId),
+          builder: (_) => _screenFactory.makeAddingCompletedRepair(
+              vehicleObjectId, completedRepairObjectId),
         );
       case MainNavigationRouteNames.objectMainInfoScreen:
         final arguments = settings.arguments;
         final buildingObjectId = arguments is String ? arguments : '';
         return MaterialPageRoute(
           builder: (_) => _screenFactory.makeObjectMainInfo(buildingObjectId),
+        );
+      case MainNavigationRouteNames.addingObjectScreen:
+        final arguments = settings.arguments;
+        final buildingObjectId = arguments is String ? arguments : '';
+        return MaterialPageRoute(
+          builder: (_) => _screenFactory.makeAddingObject(buildingObjectId),
         );
       default:
         const widget =

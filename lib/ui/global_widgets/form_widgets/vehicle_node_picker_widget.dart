@@ -135,6 +135,7 @@ class _NodeWidget extends StatelessWidget {
   }
 }
 
+//TODO Геттеры попробовать сделать late полями
 class NodeWidgetConfiguration {
   final String iconName;
   final String title;

@@ -10,12 +10,14 @@ class VehicleApiClient {
   Future<String?> saveVehicleToDatabase({
     required String model,
     required int mileage,
+    required int vehicleType,
     String? licensePlate,
     String? description,
   }) async {
     var vehicle = ParseObject(ParseObjectNames.vehicle);
     vehicle.set('model', model);
     vehicle.set('mileage', mileage);
+    vehicle.set('vehicleType', vehicleType);
 
     if (licensePlate != null) {
       vehicle.set('licensePlate', licensePlate);
@@ -30,9 +32,53 @@ class VehicleApiClient {
     return vehicle.objectId;
   }
 
-  Future<List<Vehicle>> getVehiclesList() async {
-    final stopwatch = Stopwatch()..start();
+  Future<String?> updateVehicle({
+    required String objectId,
+    String? model,
+    int? mileage,
+    int? vehicleType,
+    String? licensePlate,
+    String? description,
+  }) async {
+    var vehicle = ParseObject(ParseObjectNames.vehicle);
+    vehicle.objectId = objectId;
 
+    if (model != null) {
+      vehicle.set('model', model);
+    }
+    if (mileage != null) {
+      vehicle.set('mileage', mileage);
+    }
+    if (vehicleType != null) {
+      vehicle.set('vehicleType', vehicleType);
+    }
+    if (licensePlate != null) {
+      vehicle.set('licensePlate', licensePlate);
+    }
+    if (description != null) {
+      vehicle.set('description', description);
+    }
+
+    if (model != null ||
+        mileage != null ||
+        vehicleType != null ||
+        licensePlate != null ||
+        description != null) {
+      final ParseResponse apiResponse = await vehicle.save();
+      ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    }
+    return vehicle.objectId;
+  }
+
+  Future<void> deleteVehicleFromDatabase(String vehicleId) async {
+    final parseVehicle = ParseObject(ParseObjectNames.vehicle)
+      ..objectId = vehicleId;
+
+    final ParseResponse apiResponse = await parseVehicle.delete();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+  }
+
+  Future<List<Vehicle>> getVehiclesList() async {
     List<Vehicle> vehiclesList = [];
 
     QueryBuilder<ParseObject> queryVehicle =
@@ -50,18 +96,12 @@ class VehicleApiClient {
         final breakageDangerLevel =
             await _getBreakageLevel(vehicleParseObject.objectId!);
 
-        final routineMaintenanceHoursInfo =
-            await _getRemainEngineHours(vehicleParseObject.objectId!);
-
         final vehicle = Vehicle.getVehicle(
           vehicleParseObject: vehicleParseObject,
           breakageDangerLevel: breakageDangerLevel,
-          hoursInfo: routineMaintenanceHoursInfo,
         );
         vehiclesList.add(vehicle);
       }
-      stopwatch.stop();
-      print('EXECUTED in ${stopwatch.elapsed}');
       return vehiclesList;
     } else {
       throw ApiClientException(type: ApiClientExceptionType.emptyResponse);
@@ -86,7 +126,6 @@ class VehicleApiClient {
     // } else {
     //   return -1;
     // }
-
     QueryBuilder<ParseObject> queryBreakage =
         QueryBuilder<ParseObject>(ParseObject(ParseObjectNames.breakage))
           ..keysToReturn(['dangerLevel'])
@@ -101,50 +140,12 @@ class VehicleApiClient {
 
     final apiResponse = await queryBreakage.query();
     ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
-
     if (apiResponse.results != null) {
       final breakage = apiResponse.results!.first as ParseObject;
       return breakage.get<int>('dangerLevel')!;
     } else {
       //TODO Подумать как лучше показывать, что нет неисправностей
       return -1;
-    }
-  }
-
-  Future<RoutineMaintenanceHoursInfo?> _getRemainEngineHours(
-    String vehicleObjectId,
-  ) async {
-    QueryBuilder<ParseObject> queryRoutineMaintenance = QueryBuilder<
-        ParseObject>(ParseObject(ParseObjectNames.routineMaintenance))
-      ..keysToReturn(['periodicity', 'engineHoursValue'])
-      ..whereEqualTo(
-          'vehicle',
-          (ParseObject(ParseObjectNames.vehicle)..objectId = vehicleObjectId)
-              .toPointer());
-
-    final apiResponse = await queryRoutineMaintenance.query();
-    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
-
-    //TODO Пока колхозный метод, который не сохраняет полученные данные, а потом будет грузить их по новой
-    RoutineMaintenanceHoursInfo minRemainEngineHours =
-        RoutineMaintenanceHoursInfo(periodicity: 50000, engineHoursValue: 0);
-    final apiResponseResults = apiResponse.results;
-    if (apiResponseResults != null) {
-      for (var element in apiResponseResults) {
-        final routineMaintenance = element as ParseObject;
-        final engineHoursValue =
-            routineMaintenance.get<int>('engineHoursValue');
-        final periodicity = routineMaintenance.get<int>('periodicity');
-        if (engineHoursValue != null && periodicity != null) {
-          final hoursInfo = RoutineMaintenanceHoursInfo(
-              periodicity: periodicity, engineHoursValue: engineHoursValue);
-          if (hoursInfo.remainEngineHours <
-              minRemainEngineHours.remainEngineHours) {
-            minRemainEngineHours = hoursInfo;
-          }
-        }
-      }
-      return minRemainEngineHours;
     }
   }
 }

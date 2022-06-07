@@ -4,13 +4,18 @@ import 'package:autospectechnics/domain/api_clients/photos_to_entity_adding_rela
 import 'package:autospectechnics/domain/data_providers/completed_repair_data_provider.dart';
 import 'package:autospectechnics/domain/entities/completed_repair.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
+import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CompletedRepairService {
-  final _completedRepairDataProvider = CompletedRepairDataProvider();
   final _completedRepairApiClient = CompletedRepairApiClient();
   final _imagesApiClient = ImagesApiClient();
   final _photosToEntityApiClient = PhotosToEntityAddingRelationApiClient();
+
+  final String _vehicleObjectId;
+  CompletedRepairService(this._vehicleObjectId);
+  late final _completedRepairDataProvider =
+      CompletedRepairDataProvider(_vehicleObjectId);
 
   Future<void> createCompletedRepair({
     required String title,
@@ -18,7 +23,6 @@ class CompletedRepairService {
     required String description,
     required DateTime date,
     required String vehicleNode,
-    required String vehicleObjectId,
     String? breakageObjectId,
     List<XFile>? imagesList,
   }) async {
@@ -29,51 +33,117 @@ class CompletedRepairService {
       description: description,
       date: date,
       vehicleNode: vehicleNode,
-      vehicleObjectId: vehicleObjectId,
+      vehicleObjectId: _vehicleObjectId,
       breakageObjectId: breakageObjectId,
     );
-    if (completedRepairObjectId != null &&
-        imagesList != null &&
-        imagesList.isNotEmpty) {
-      final savedImagesObjectIds =
-          await _imagesApiClient.saveImagesToDatabase(imagesList);
-      await _photosToEntityApiClient.addPhotosRelationToEntity(
-        parseObjectName: ParseObjectNames.completedRepair,
-        entityObjectId: completedRepairObjectId,
-        imageObjectIdList: savedImagesObjectIds.keys.toList(),
+    Map<String, String> savedImagesIdUrl = {};
+    if (completedRepairObjectId != null) {
+      if (imagesList != null && imagesList.isNotEmpty) {
+        savedImagesIdUrl =
+            await _imagesApiClient.saveImagesToDatabase(imagesList);
+        await _photosToEntityApiClient.addPhotosRelationToEntity(
+          parseObjectName: ParseObjectNames.completedRepair,
+          entityObjectId: completedRepairObjectId,
+          imageObjectIdList: savedImagesIdUrl.keys.toList(),
+        );
+      }
+      final completedRepair = CompletedRepair(
+        objectId: completedRepairObjectId,
+        title: title,
+        mileage: mileage,
+        description: description,
+        date: date,
+        vehicleNode: vehicleNode,
+        imagesIdUrl: savedImagesIdUrl,
+        breakageObjectId: breakageObjectId ?? '',
       );
+      await _completedRepairDataProvider
+          .putCompletedRepairToHive(completedRepair);
     }
   }
 
-  Future<List<CompletedRepair>> downloadVehicleCompletedRepairs({
-    required String vehicleObjectId,
-  }) async {
-    final vehicleCompletedRepairs = await _completedRepairApiClient
-        .getCompletedRepairList(vehicleObjectId: vehicleObjectId);
+  Future<List<CompletedRepair>> downloadVehicleCompletedRepairs() async {
+    final vehicleCompletedRepairsFromServer = await _completedRepairApiClient
+        .getCompletedRepairList(vehicleObjectId: _vehicleObjectId);
     await _completedRepairDataProvider
-        .deleteAllCompletedRepairsFromHive(vehicleObjectId);
-    for (var completedRepair in vehicleCompletedRepairs) {
-      await _completedRepairDataProvider.putCompletedRepairToHive(
-          completedRepair, vehicleObjectId);
+        .deleteUnnecessaryCompletedRepairsFromHive(
+            vehicleCompletedRepairsFromServer);
+    for (var completedRepair in vehicleCompletedRepairsFromServer) {
+      await _completedRepairDataProvider
+          .putCompletedRepairToHive(completedRepair);
     }
-    return await getVehicleCompletedRepairsFromHive(
-        vehicleObjectId: vehicleObjectId);
+    return await getVehicleCompletedRepairsFromHive();
   }
 
-  Future<List<CompletedRepair>> getVehicleCompletedRepairsFromHive({
-    required String vehicleObjectId,
-  }) async {
-    final vehicleCompletedRepairs = await _completedRepairDataProvider
-        .getCompletedRepairsListFromHive(vehicleObjectId);
-    //TODO Нужна ли сортировка, не знаю, надо проверить как отображаются
-    // vehicleBreakages.sort((b, a) => a.dangerLevel.compareTo(b.dangerLevel));
+  Future<List<CompletedRepair>> getVehicleCompletedRepairsFromHive() async {
+    final vehicleCompletedRepairs =
+        await _completedRepairDataProvider.getCompletedRepairsListFromHive();
+    vehicleCompletedRepairs.sort((b, a) => a.date.compareTo(b.date));
     return vehicleCompletedRepairs;
   }
 
   Future<CompletedRepair?> geCompletedRepairFromHive(
-      String completedRepairObjectId, String vehicleId) async {
+      String completedRepairObjectId) async {
     final completedRepair = _completedRepairDataProvider
-        .getCompletedRepairFromHive(completedRepairObjectId, vehicleId);
+        .getCompletedRepairFromHive(completedRepairObjectId);
     return completedRepair;
+  }
+
+  Future<Stream<BoxEvent>> getCompletedRepairStream() async {
+    final completedRepairStream =
+        _completedRepairDataProvider.getCompletedRepairStream();
+    return completedRepairStream;
+  }
+
+  Future<void> updateCompletedRepair({
+    required String objectId,
+    String? title,
+    int? mileage,
+    String? description,
+    DateTime? date,
+    String? vehicleNode,
+    List<XFile>? imagesList,
+  }) async {
+    final completedRepairObjectId =
+        await _completedRepairApiClient.updateCompletedRepair(
+      objectId: objectId,
+      title: title,
+      mileage: mileage,
+      description: description,
+      date: date,
+      vehicleNode: vehicleNode,
+    );
+    Map<String, String> savedImagesIdUrl = {};
+    if (completedRepairObjectId != null) {
+      if (imagesList != null && imagesList.isNotEmpty) {
+        savedImagesIdUrl =
+            await _imagesApiClient.saveImagesToDatabase(imagesList);
+        await _photosToEntityApiClient.addPhotosRelationToEntity(
+          parseObjectName: ParseObjectNames.completedRepair,
+          entityObjectId: completedRepairObjectId,
+          imageObjectIdList: savedImagesIdUrl.keys.toList(),
+        );
+      }
+      await _completedRepairDataProvider.updateCompletedRepairInHive(
+        completedRepairId: completedRepairObjectId,
+        title: title,
+        mileage: mileage,
+        description: description,
+        date: date,
+        vehicleNode: vehicleNode,
+        imagesIdUrl: savedImagesIdUrl,
+      );
+    }
+  }
+
+  Future<void> deleteCompletedRepair(String completedRepairId) async {
+    await _completedRepairApiClient
+        .deleteCompletedRepairFromDatabase(completedRepairId);
+    await _completedRepairDataProvider
+        .deleteCompletedRepairFromHive(completedRepairId);
+  }
+
+  Future<void> dispose() async {
+    await _completedRepairDataProvider.dispose();
   }
 }

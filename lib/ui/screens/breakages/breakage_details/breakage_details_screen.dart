@@ -1,3 +1,4 @@
+import 'package:autospectechnics/resources/resources.dart';
 import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/photo_list_widget.dart';
@@ -13,15 +14,17 @@ class BreakageDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<BreakageDetailsViewModel>();
     return Scaffold(
-      appBar: const AppBarWidget(
+      appBar: AppBarWidget(
         title: 'Поломки',
         hasBackButton: true,
+        onDeleteButtonTap: () => model.onDeleteButtonTap(context),
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
-        child: const Text('Устранено'),
-        onPressed: () {},
+        child: const Text('Редактировать'),
+        onPressed: () => model.openUpdatingBreakageScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
@@ -35,8 +38,11 @@ class _BodyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<BreakageDetailsViewModel>();
     final isLoadingProgress =
         context.select((BreakageDetailsViewModel vm) => vm.isLoadingProgress);
+    final isUpdatingProgress =
+        context.select((BreakageDetailsViewModel vm) => vm.isUpdatingProgress);
     final configuration = context.select(
         (BreakageDetailsViewModel vm) => vm.breakageWidgetConfiguration);
     return isLoadingProgress
@@ -55,6 +61,26 @@ class _BodyWidget extends StatelessWidget {
                       style: AppTextStyles.semiBold.copyWith(
                         color: AppColors.black,
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: () => model.fixBreakage(context),
+                    child: isUpdatingProgress
+                        ? const SizedBox(
+                            height: 32,
+                            width: 32,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 3,
+                            ),
+                          )
+                        : SvgPicture.asset(AppSvgs.fixIcon),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: AppColors.blue,
+                      fixedSize: const Size(40, 40),
+                      primary: AppColors.white,
+                      shape: const CircleBorder(),
+                      side: BorderSide.none,
                     ),
                   ),
                 ],

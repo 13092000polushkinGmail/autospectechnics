@@ -2,6 +2,7 @@ import 'package:autospectechnics/ui/global_widgets/app_bar_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_several_photos_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/header_widget.dart';
+import 'package:autospectechnics/ui/global_widgets/form_widgets/several_photos_from_server_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/text_field_template_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/form_widgets/vehicle_node_picker_widget.dart';
 import 'package:autospectechnics/ui/screens/adding_recommendation/adding_recommendation_view_model.dart';
@@ -18,9 +19,8 @@ class AddingRecommendationScreen extends StatelessWidget {
     final isLoadingProgress = context
         .select((AddingRecommendationViewModel vm) => vm.isLoadingProgress);
     return Scaffold(
-      appBar: const AppBarWidget(
-        //TODO Такой заголовок не входит на экран title: 'Добавление рекомендации',
-        title: 'Добавить рекомендацию',
+      appBar: AppBarWidget(
+        title: model.screenTitle,
         hasBackButton: true,
       ),
       body: const _BodyWidget(),
@@ -42,11 +42,13 @@ class _BodyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final model = context.read<AddingRecommendationViewModel>();
+    final model = context.watch<AddingRecommendationViewModel>();
     final selectedIndex = context.select(
         (AddingRecommendationViewModel vm) => vm.selectedVehiicleNodeIndex);
-    final imageList =
-        context.select((AddingRecommendationViewModel vm) => vm.imageList);
+    final pickedImageList = context
+        .select((AddingRecommendationViewModel vm) => vm.pickedImageList);
+    final imagesFromServerIdURLs = context.select(
+        (AddingRecommendationViewModel vm) => vm.imagesFromServerIdURLs);
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
       children: [
@@ -68,9 +70,23 @@ class _BodyWidget extends StatelessWidget {
           maxLines: 5,
         ),
         const SizedBox(height: 16),
-        AddingSeveralPhotosWidget(
-          imageList: imageList,
-          onAddingTap: () => model.pickImage(context: context),
+        SizedBox(
+          height: 120,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              AddingSeveralPhotosWidget(
+                imageList: pickedImageList,
+                onAddingTap: () => model.pickImage(context: context),
+                onDeletePhotoTap: model.deleteImageFile,
+              ),
+              const SizedBox(width: 8),
+              SeveralPhotosFromServerWidget(
+                imageIdURLs: imagesFromServerIdURLs,
+                onDeletePhotoTap: model.deleteImageFromServer,
+              ),
+            ],
+          ),
         ),
       ],
     );

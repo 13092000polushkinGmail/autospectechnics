@@ -6,19 +6,19 @@ import 'package:autospectechnics/domain/data_providers/building_object_data_prov
 import 'package:autospectechnics/domain/data_providers/vehicle_building_object_data_provider.dart';
 import 'package:autospectechnics/domain/data_providers/vehicle_data_provider.dart';
 import 'package:autospectechnics/domain/entities/building_object.dart';
-import 'package:autospectechnics/domain/entities/vehicle.dart';
+import 'package:autospectechnics/domain/entities/vehicle_building_object.dart';
 import 'package:autospectechnics/domain/parse_database_string_names/parse_objects_names.dart';
+import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 
 class BuildingObjectService {
   final _buildingObjectApiClient = BuildingObjectApiClient();
   final _vehicleBuildingObjectApiClient = VehicleBuildingObjectApiClient();
-  final _vehicleBuildingObjectDataProvider =
-      VehicleBuildingObjectDataProvider();
-  final _vehicleDataProvider = VehicleDataProvider();
-  final _buildingObjectDataProvider = BuildingObjectDataProvider();
   final _imagesApiClient = ImagesApiClient();
   final _photosToEntityApiClient = PhotosToEntityAddingRelationApiClient();
+
+  final _vehicleDataProvider = VehicleDataProvider();
+  final _buildingObjectDataProvider = BuildingObjectDataProvider();
 
   Future<void> createBuildingObject({
     required String title,
@@ -37,46 +37,80 @@ class BuildingObjectService {
       description: description,
       isCompleted: isCompleted,
     );
+    Map<String, String> savedImagesIdUrl = {};
     if (buildingObjectId != null) {
       if (vehicleEngineHours.isNotEmpty) {
         final amountPickedVehicles = vehicleEngineHours.length;
         final vehicleIds = vehicleEngineHours.keys.toList();
-        final requiredEngineHours = vehicleEngineHours.values.toList();
+        final requiredEngineHoursList = vehicleEngineHours.values.toList();
         for (var i = 0; i < amountPickedVehicles; i++) {
-          await _vehicleBuildingObjectApiClient
+          final vehicleId = vehicleIds[i];
+          final requiredEngineHours = requiredEngineHoursList[i];
+          final vehicleBuildingObjectID = await _vehicleBuildingObjectApiClient
               .saveVehicleBuildingObjectToDatabase(
-                  buildingObjectId: buildingObjectId,
-                  vehicleId: vehicleIds[i],
-                  requiredEngineHours: requiredEngineHours[i]);
+            buildingObjectId: buildingObjectId,
+            vehicleId: vehicleId,
+            requiredEngineHours: requiredEngineHours,
+          );
+          if (vehicleBuildingObjectID != null) {
+            final vehicleBuildingObject = VehicleBuildingObject(
+              id: vehicleBuildingObjectID,
+              buildingObjectId: buildingObjectId,
+              vehicleId: vehicleId,
+              requiredEngineHours: requiredEngineHours,
+            );
+            final vehicleBuildingObjectDataProvider =
+                VehicleBuildingObjectDataProvider(buildingObjectId);
+            await vehicleBuildingObjectDataProvider
+                .putVehicleBuildingObjectToHive(vehicleBuildingObject);
+            await vehicleBuildingObjectDataProvider.dispose();
+          }
         }
       }
       if (imagesList != null && imagesList.isNotEmpty) {
-        final savedImagesObjectIds =
+        savedImagesIdUrl =
             await _imagesApiClient.saveImagesToDatabase(imagesList);
         await _photosToEntityApiClient.addPhotosRelationToEntity(
           parseObjectName: ParseObjectNames.buildingObject,
           entityObjectId: buildingObjectId,
-          imageObjectIdList: savedImagesObjectIds.keys.toList(),
+          imageObjectIdList: savedImagesIdUrl.keys.toList(),
         );
       }
+      final buildingObject = BuildingObject(
+        objectId: buildingObjectId,
+        title: title,
+        startDate: startDate,
+        finishDate: finishDate,
+        description: description,
+        isCompleted: isCompleted,
+        imagesIdUrl: savedImagesIdUrl,
+      );
+      await _buildingObjectDataProvider.putBuildingObjectToHive(buildingObject);
     }
   }
 
   Future<List<BuildingObject>> downloadBuildingObjects() async {
-    final buildingObjectList =
+    final buildingObjectListFromServer =
         await _buildingObjectApiClient.getBuildingObjectList();
-    await _buildingObjectDataProvider.deleteAllBuildingObjectsFromHive();
+    await _buildingObjectDataProvider
+        .deleteAllUnnecessaryBuildingObjectsFromHive(
+            buildingObjectListFromServer);
 
-    for (var buildingObject in buildingObjectList) {
+    for (var buildingObject in buildingObjectListFromServer) {
       await _buildingObjectDataProvider.putBuildingObjectToHive(buildingObject);
-      final vehicleBuildingObjectList = await _vehicleBuildingObjectApiClient
-          .downloadVehicleBuildingObjectList(buildingObject.objectId);
-      await _vehicleBuildingObjectDataProvider
-          .deleteAllVehicleBuildingObjectsFromHive(buildingObject.objectId);
-      for (var vehicleBuildingObject in vehicleBuildingObjectList) {
-        await _vehicleBuildingObjectDataProvider
+      final vehicleBuildingObjectListFromServer =
+          await _vehicleBuildingObjectApiClient
+              .downloadVehicleBuildingObjectList(buildingObject.objectId);
+      final vehicleBuildingObjectDataProvider =
+          VehicleBuildingObjectDataProvider(buildingObject.objectId);
+      await vehicleBuildingObjectDataProvider
+          .deleteUnnecessaryVehicleBuildingObjectsFromHive(
+              vehicleBuildingObjectListFromServer);
+      for (var vehicleBuildingObject in vehicleBuildingObjectListFromServer) {
+        await vehicleBuildingObjectDataProvider
             .putVehicleBuildingObjectToHive(vehicleBuildingObject);
       }
+      await vehicleBuildingObjectDataProvider.dispose();
     }
     return await getBuildingObjectsListFromHive();
   }
@@ -84,6 +118,8 @@ class BuildingObjectService {
   Future<List<BuildingObject>> getBuildingObjectsListFromHive() async {
     final buildingObjectsList =
         await _buildingObjectDataProvider.getBuildingObjectListFromHive();
+    buildingObjectsList.sort((a, b) => a.startDate.compareTo(b
+        .startDate)); //TODO Не совсем правильная сортировка, нужно еще проверять завершен ли объект, сделал для видео
     return buildingObjectsList;
   }
 
@@ -96,20 +132,109 @@ class BuildingObjectService {
   }
 
   Future<int> getBuildingObjectVehicleStatus(String buildingObjectId) async {
-    final vehicleBuldingObjectList = await _vehicleBuildingObjectDataProvider
-        .getVehicleBuildingObjectListFromHive(buildingObjectId);
-    int buildingObjectVehicleStatus = -2;
+    final vehicleBuildingObjectDataProvider =
+        VehicleBuildingObjectDataProvider(buildingObjectId);
+    final vehicleBuldingObjectList = await vehicleBuildingObjectDataProvider
+        .getVehicleBuildingObjectListFromHive();
+    int mostDangerVehicleStatus = -2; //-2 значит, что техника не выбрана
     for (var vehicleBuldingObject in vehicleBuldingObjectList) {
       final vehicle = await _vehicleDataProvider
           .getVehicleFromHive(vehicleBuldingObject.vehicleId);
       if (vehicle != null) {
-        final vehicleStatus = Vehicle.getVehicleDangerLevel(
-            vehicle, vehicleBuldingObject.requiredEngineHours);
-        if (vehicleStatus > buildingObjectVehicleStatus) {
-          buildingObjectVehicleStatus = vehicleStatus;
+        final vehicleStatus =
+            vehicle.getVehicleStatusFromRoutineMaintenanceInfo(
+                vehicleBuldingObject.requiredEngineHours);
+        if (vehicleStatus > mostDangerVehicleStatus) {
+          mostDangerVehicleStatus = vehicleStatus;
         }
       }
     }
-    return buildingObjectVehicleStatus;
+    return mostDangerVehicleStatus;
+  }
+
+  Future<Stream<BoxEvent>> getBuildingObjectStream() async {
+    final buildingObjectStream =
+        await _buildingObjectDataProvider.getBuildingObjectStream();
+    return buildingObjectStream;
+  }
+
+  Future<void> updateBuildingObject({
+    required String objectId,
+    String? title,
+    DateTime? startDate,
+    DateTime? finishDate,
+    String? description,
+    bool? isCompleted,
+    List<XFile>? imagesList,
+    required Map<String, int> vehicleEngineHours,
+  }) async {
+    final buildingObjectId =
+        await _buildingObjectApiClient.updateBuildingObject(
+      objectId: objectId,
+      title: title,
+      startDate: startDate,
+      finishDate: finishDate,
+      description: description,
+      isCompleted: isCompleted,
+    );
+    Map<String, String> savedImagesIdUrl = {};
+    if (buildingObjectId != null) {
+      if (vehicleEngineHours.isNotEmpty) {
+        final amountPickedVehicles = vehicleEngineHours.length;
+        final vehicleIds = vehicleEngineHours.keys.toList();
+        final requiredEngineHoursList = vehicleEngineHours.values.toList();
+        for (var i = 0; i < amountPickedVehicles; i++) {
+          final vehicleId = vehicleIds[i];
+          final requiredEngineHours = requiredEngineHoursList[i];
+          final vehicleBuildingObjectID = await _vehicleBuildingObjectApiClient
+              .saveVehicleBuildingObjectToDatabase(
+            buildingObjectId: buildingObjectId,
+            vehicleId: vehicleId,
+            requiredEngineHours: requiredEngineHours,
+          );
+          if (vehicleBuildingObjectID != null) {
+            final vehicleBuildingObject = VehicleBuildingObject(
+              id: vehicleBuildingObjectID,
+              buildingObjectId: buildingObjectId,
+              vehicleId: vehicleId,
+              requiredEngineHours: requiredEngineHours,
+            );
+            final vehicleBuildingObjectDataProvider =
+                VehicleBuildingObjectDataProvider(buildingObjectId);
+            await vehicleBuildingObjectDataProvider
+                .putVehicleBuildingObjectToHive(vehicleBuildingObject);
+            await vehicleBuildingObjectDataProvider.dispose();
+          }
+        }
+      }
+      if (imagesList != null && imagesList.isNotEmpty) {
+        savedImagesIdUrl =
+            await _imagesApiClient.saveImagesToDatabase(imagesList);
+        await _photosToEntityApiClient.addPhotosRelationToEntity(
+          parseObjectName: ParseObjectNames.buildingObject,
+          entityObjectId: buildingObjectId,
+          imageObjectIdList: savedImagesIdUrl.keys.toList(),
+        );
+      }
+      await _buildingObjectDataProvider.updateBuildingObjectInHive(
+        buildingObjectId: buildingObjectId,
+        title: title,
+        startDate: startDate,
+        finishDate: finishDate,
+        description: description,
+        isCompleted: isCompleted,
+        imagesIdUrl: savedImagesIdUrl,
+      );
+    }
+  }
+
+  Future<void> deleteBuildingObject(String buildingObjectId) async {
+    await _buildingObjectApiClient.deleteBuildingObject(buildingObjectId);
+    await _buildingObjectDataProvider
+        .deleteBuildingObjectFromHive(buildingObjectId);
+  }
+
+  Future<void> dispose() async {
+    await _buildingObjectDataProvider.dispose();
   }
 }

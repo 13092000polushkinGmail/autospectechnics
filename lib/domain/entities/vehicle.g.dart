@@ -20,24 +20,27 @@ class VehicleAdapter extends TypeAdapter<Vehicle> {
       objectId: fields[0] as String,
       model: fields[1] as String,
       mileage: fields[2] as int,
+      vehicleType: fields[8] as int,
       licensePlate: fields[3] as String?,
       description: fields[4] as String?,
       breakageDangerLevel: fields[5] as int,
       hoursInfo: fields[6] as RoutineMaintenanceHoursInfo?,
-      imageURL: fields[7] as String?,
+      imageIdUrl: (fields[7] as Map).cast<String, String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Vehicle obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.objectId)
       ..writeByte(1)
       ..write(obj.model)
       ..writeByte(2)
       ..write(obj.mileage)
+      ..writeByte(8)
+      ..write(obj.vehicleType)
       ..writeByte(3)
       ..write(obj.licensePlate)
       ..writeByte(4)
@@ -47,7 +50,7 @@ class VehicleAdapter extends TypeAdapter<Vehicle> {
       ..writeByte(6)
       ..write(obj.hoursInfo)
       ..writeByte(7)
-      ..write(obj.imageURL);
+      ..write(obj.imageIdUrl);
   }
 
   @override

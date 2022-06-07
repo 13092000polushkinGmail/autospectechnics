@@ -15,17 +15,19 @@ class ObjectMainInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<ObjectMainInfoViewModel>();
     final title = context.select((ObjectMainInfoViewModel vm) =>
         vm.informationWidgetConfiguration.buildingObjectTitle);
     return Scaffold(
       appBar: AppBarWidget(
         title: title,
         hasBackButton: true,
+        onDeleteButtonTap: () => model.onDeleteButtonTap(context),
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
         child: const Text('Редактировать'),
-        onPressed: () {},
+        onPressed: () => model.openUpdatingBuildingObjectScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
@@ -43,8 +45,9 @@ class _BodyWidget extends StatelessWidget {
         context.select((ObjectMainInfoViewModel vm) => vm.isLoadingProgress);
     final informationWidgetConfiguration = context.select(
         (ObjectMainInfoViewModel vm) => vm.informationWidgetConfiguration);
-    final vehiclesListLength =
-        context.select((ObjectMainInfoViewModel vm) => vm.vehiclesListLength);
+    final vehiclesList =
+        context.select((ObjectMainInfoViewModel vm) => vm.vehiclesList);
+    final date = informationWidgetConfiguration.date;
     return isLoadingProgress
         ? const Center(
             child: CircularProgressIndicator(),
@@ -53,156 +56,39 @@ class _BodyWidget extends StatelessWidget {
             padding:
                 const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    color: AppColors.greyBorder,
-                  ),
-                  Text(
-                    '${informationWidgetConfiguration.startDate} - ${informationWidgetConfiguration.finishDate}',
-                    style: AppTextStyles.hint.copyWith(
-                      color: AppColors.greyText,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const _ObjectInfoWidget(),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: vehiclesListLength,
-                itemBuilder: (_, index) => _VehicleWidget(index: index),
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-              ),
-            ],
-          );
-  }
-}
-
-class _VehicleWidget extends StatelessWidget {
-  final int index;
-  const _VehicleWidget({
-    Key? key,
-    required this.index,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final model = context.read<ObjectMainInfoViewModel>();
-    final vehicleWidgetConfiguration = context.select(
-      (ObjectMainInfoViewModel vm) => vm.getVehicleWidgetConfiguration(index),
-    );
-    return InkWell(
-      onTap: () => model.openVehicleInfoScreen(context, index),
-      borderRadius: BorderRadius.circular(12),
-      child: DecoratedBox(
-        decoration: AppBoxDecorations.cardBoxDecoration,
-        child: Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                  left: 1, bottom: 1, top: 1), //Отступы, чтобы было видно рамку
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
-                ),
-                child: SizedBox(
-                  height: 108,
-                  width: 116,
-                  child: NetworkImageWidget(
-                      url: vehicleWidgetConfiguration.imageURL),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(child: _VehicleInfoWidget(index: index)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VehicleInfoWidget extends StatelessWidget {
-  final int index;
-  const _VehicleInfoWidget({
-    Key? key,
-    required this.index,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final vehicleWidgetConfiguration = context.select(
-      (ObjectMainInfoViewModel vm) => vm.getVehicleWidgetConfiguration(index),
-    );
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 16, right: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            vehicleWidgetConfiguration.title,
-            style: AppTextStyles.semiBold.copyWith(
-              color: AppColors.black,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
+              if (date != null)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SvgPicture.asset(vehicleWidgetConfiguration.breakageIcon),
+                    const Icon(
+                      Icons.calendar_today,
+                      color: AppColors.greyBorder,
+                    ),
                     Text(
-                      'Готовность',
+                      date,
                       style: AppTextStyles.hint.copyWith(
-                        color: AppColors.black,
+                        color: AppColors.greyText,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: vehicleWidgetConfiguration.remainEngineHours == null
-                    ? Text(
-                        'Регламенты не заданы',
-                        style: AppTextStyles.hint.copyWith(
-                          color: AppColors.black,
-                        ),
-                        textAlign: TextAlign.center,
-                      )
-                    : Column(
-                        children: [
-                          Text(
-                            '${vehicleWidgetConfiguration.remainEngineHours}/${vehicleWidgetConfiguration.requiredEngineHours}',
-                            style: AppTextStyles.regular16.copyWith(
-                              color: AppColors.black,
-                            ),
-                          ),
-                          Text(
-                            'Ресурс (м.ч.)',
-                            style: AppTextStyles.hint.copyWith(
-                              color: AppColors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
+              const SizedBox(height: 8),
+              const _ObjectInfoWidget(),
+              vehiclesList.isNotEmpty
+                  ? ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: vehiclesList.length,
+                      itemBuilder: (_, index) => _VehicleWidget(index: index),
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    )
+                  : Text(
+                      'Техника не выбрана. Выбрать технику можно через редактирование объекта.',
+                      style: AppTextStyles.regular16
+                          .copyWith(color: AppColors.black),
+                    ),
             ],
-          ),
-        ],
-      ),
-    );
+          );
   }
 }
 
@@ -251,6 +137,8 @@ class _ObjectInfoWidgetState extends State<_ObjectInfoWidget>
   Widget build(BuildContext context) {
     final informationWidgetConfiguration = context.select(
         (ObjectMainInfoViewModel vm) => vm.informationWidgetConfiguration);
+    final days = informationWidgetConfiguration.days;
+    final breakageIcon = informationWidgetConfiguration.breakageIcon;
     return Column(
       children: [
         SizeTransition(
@@ -263,13 +151,21 @@ class _ObjectInfoWidgetState extends State<_ObjectInfoWidget>
                   photosURL: informationWidgetConfiguration.photosURL),
               const SizedBox(height: 16),
               Text(
-                '${informationWidgetConfiguration.daysInfo.daysAmount} ${informationWidgetConfiguration.daysInfo.daysText.toLowerCase()}',
+                informationWidgetConfiguration.title,
                 style: AppTextStyles.regular16.copyWith(
                   color: AppColors.black,
                 ),
               ),
               const SizedBox(height: 8),
-              if (informationWidgetConfiguration.breakageIcon != null)
+              if (days != null)
+                Text(
+                  days,
+                  style: AppTextStyles.regular16.copyWith(
+                    color: AppColors.black,
+                  ),
+                ),
+              const SizedBox(height: 8),
+              if (breakageIcon != null)
                 Row(
                   children: [
                     Text(
@@ -279,8 +175,7 @@ class _ObjectInfoWidgetState extends State<_ObjectInfoWidget>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    SvgPicture.asset(
-                        informationWidgetConfiguration.breakageIcon!),
+                    SvgPicture.asset(breakageIcon),
                   ],
                 )
               else
@@ -344,5 +239,136 @@ class _ObjectInfoHeaderWidget extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class _VehicleWidget extends StatelessWidget {
+  final int index;
+  const _VehicleWidget({
+    Key? key,
+    required this.index,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.read<ObjectMainInfoViewModel>();
+    final configuration = context.select(
+      (ObjectMainInfoViewModel vm) => vm.getVehicleWidgetConfiguration(index),
+    );
+    return configuration != null
+        ? InkWell(
+            onTap: () => model.openVehicleInfoScreen(context, index),
+            borderRadius: BorderRadius.circular(12),
+            child: DecoratedBox(
+              decoration: AppBoxDecorations.cardBoxDecoration,
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 1,
+                      bottom: 1,
+                      top: 1,
+                    ), //Отступы, чтобы было видно рамку
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        bottomLeft: Radius.circular(12),
+                      ),
+                      child: SizedBox(
+                        height: 108,
+                        width: 116,
+                        child: NetworkImageWidget(url: configuration.imageURL),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(child: _VehicleInfoWidget(index: index)),
+                ],
+              ),
+            ),
+          )
+        : const SizedBox.shrink();
+  }
+}
+
+class _VehicleInfoWidget extends StatelessWidget {
+  final int index;
+  const _VehicleInfoWidget({
+    Key? key,
+    required this.index,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final configuration = context.select(
+      (ObjectMainInfoViewModel vm) => vm.getVehicleWidgetConfiguration(index),
+    );
+    final engineHoursInfo = configuration?.engineHoursInfo;
+    return configuration != null
+        ? Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 16, right: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  configuration.title,
+                  style: AppTextStyles.semiBold.copyWith(
+                    color: AppColors.black,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          SvgPicture.asset(configuration.breakageIcon),
+                          Text(
+                            'Готовность',
+                            style: AppTextStyles.hint.copyWith(
+                              color: AppColors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: engineHoursInfo == null
+                          ? Text(
+                              'Регламенты не заданы',
+                              style: AppTextStyles.hint.copyWith(
+                                color: AppColors.black,
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                          : Column(
+                              children: [
+                                Text(
+                                  engineHoursInfo,
+                                  style: AppTextStyles.regular16.copyWith(
+                                    color: AppColors.black,
+                                  ),
+                                ),
+                                Text(
+                                  'Ресурс (м.ч.)',
+                                  style: AppTextStyles.hint.copyWith(
+                                    color: AppColors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          )
+        : const SizedBox.shrink();
   }
 }

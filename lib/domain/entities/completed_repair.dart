@@ -1,24 +1,25 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
 part 'completed_repair.g.dart';
 
 @HiveType(typeId: 7)
-class CompletedRepair {
+class CompletedRepair extends HiveObject {
   @HiveField(0)
   final String objectId;
   @HiveField(1)
-  final String title;
+  String title;
   @HiveField(2)
-  final int mileage;
+  int mileage;
   @HiveField(3)
-  final String description;
+  String description;
   @HiveField(4)
-  final DateTime date;
+  DateTime date;
   @HiveField(5)
-  final String vehicleNode;
+  String vehicleNode;
   @HiveField(6)
-  final List<String> photosURL;
+  Map<String, String> imagesIdUrl;
   @HiveField(7)
   final String breakageObjectId;
   CompletedRepair({
@@ -28,7 +29,7 @@ class CompletedRepair {
     required this.description,
     required this.date,
     required this.vehicleNode,
-    required this.photosURL,
+    required this.imagesIdUrl,
     this.breakageObjectId = '',
   });
 
@@ -49,13 +50,14 @@ class CompletedRepair {
             .get<ParseObject>('breakage')
             ?.get<String>('objectId') ??
         '';
-    List<String> photosURL = [];
+    Map<String, String> imagesIdUrl = {};
     for (var imageParseObject in imagesList) {
+      final imageId = imageParseObject.objectId;
       String? imageURL;
       final imageFile = imageParseObject.get<ParseFileBase>('file');
       imageURL = imageFile?.url;
-      if (imageURL != null) {
-        photosURL.add(imageURL);
+      if (imageId != null && imageURL != null) {
+        imagesIdUrl[imageId] = imageURL;
       }
     }
 
@@ -66,8 +68,63 @@ class CompletedRepair {
       description: description,
       date: date,
       vehicleNode: vehicleNode,
-      photosURL: photosURL,
+      imagesIdUrl: imagesIdUrl,
       breakageObjectId: breakageObjectId,
     );
+  }
+
+  void updateCompletedRepair(
+    String? title,
+    int? mileage,
+    String? description,
+    DateTime? date,
+    String? vehicleNode,
+    Map<String, String>? imagesIdUrl,
+  ) {
+    if (title != null) {
+      this.title = title;
+    }
+    if (mileage != null) {
+      this.mileage = mileage;
+    }
+    if (description != null) {
+      this.description = description;
+    }
+    if (date != null) {
+      this.date = date;
+    }
+    if (vehicleNode != null) {
+      this.vehicleNode = vehicleNode;
+    }
+    if (imagesIdUrl != null && imagesIdUrl.isNotEmpty) {
+      this.imagesIdUrl.addAll(imagesIdUrl);
+    }
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is CompletedRepair &&
+        other.objectId == objectId &&
+        other.title == title &&
+        other.mileage == mileage &&
+        other.description == description &&
+        other.date == date &&
+        other.vehicleNode == vehicleNode &&
+        mapEquals(other.imagesIdUrl, imagesIdUrl) &&
+        other.breakageObjectId == breakageObjectId;
+  }
+
+  @override
+  int get hashCode {
+    return objectId.hashCode ^
+        title.hashCode ^
+        mileage.hashCode ^
+        description.hashCode ^
+        date.hashCode ^
+        vehicleNode.hashCode ^
+        imagesIdUrl.hashCode ^
+        breakageObjectId.hashCode;
   }
 }

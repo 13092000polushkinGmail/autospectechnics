@@ -27,6 +27,25 @@ abstract class VehicleNodeNames {
     }
   }
 
+  static int getIndexByName(String vehicleNode) {
+    switch (vehicleNode) {
+      case engine:
+        return 0;
+      case bodywork:
+        return 1;
+      case transmission:
+        return 2;
+      case chassis:
+        return 3;
+      case technicalLiquids:
+        return 4;
+      case otherNodes:
+        return 5;
+      default:
+        return -1;
+    }
+  }
+
   static String getIconName(String vehicleNode) {
     String vehicleNodeIconName;
     if (vehicleNode == 'Engine') {

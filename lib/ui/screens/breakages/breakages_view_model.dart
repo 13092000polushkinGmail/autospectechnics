@@ -48,7 +48,8 @@ class BreakagesViewModel extends ChangeNotifier {
     isLoadingProgress = true;
     notifyListeners();
     try {
-      _breakageList = await _breakageService.getVehicleBreakagesFromHive();
+      _breakageList =
+          await _breakageService.getActiveVehicleBreakagesFromHive();
     } on ApiClientException catch (exception) {
       switch (exception.type) {
         case ApiClientExceptionType.network:

@@ -1,122 +1,95 @@
-import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
-import 'package:autospectechnics/resources/resources.dart';
-import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
+import 'dart:async';
+import 'package:autospectechnics/domain/services/vehicle_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 import 'package:autospectechnics/domain/entities/routine_maintenance.dart';
+import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
 import 'package:autospectechnics/domain/services/routine_maintenance_service.dart';
-import 'package:autospectechnics/ui/navigation/main_navigation.dart';
+import 'package:autospectechnics/resources/resources.dart';
+import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
+import 'package:autospectechnics/ui/theme/app_colors.dart';
 
 class RoutineMaintenanceViewModel extends ChangeNotifier {
-  final String _vehicleObjectId;
-  final _routineMaintenanceService = RoutineMaintenanceService();
+  late final _routineMaintenanceService =
+      RoutineMaintenanceService(_vehicleObjectId);
+  final _vehicleService = VehicleService();
 
   bool isDataLoading = false;
-  bool isRoutineMaintenanceUpdating = false;
 
-  final List<RoutineMaintenance> _engineWorkList = [];
-  final List<RoutineMaintenance> _bodyworkWorkList = [];
-  final List<RoutineMaintenance> _transmissionWorkList = [];
-  final List<RoutineMaintenance> _chassisWorkList = [];
-  final List<RoutineMaintenance> _technicalLiquidsWorkList = [];
-  final List<RoutineMaintenance> _otherNodesWorkList = [];
+  final Map<String, List<ExtendedRoutineMaintenance>> _vehicleNodeDataList = {};
 
-  final List<VehicleNodeDataWidgetConfiguration> _vehicleNodeDataList = [];
-
+  final String _vehicleObjectId;
   RoutineMaintenanceViewModel(
     this._vehicleObjectId,
     BuildContext context,
   ) {
-    getRoutineMaintenanceList(context);
+    _getRoutineMaintenanceList(context);
+    subscribeToRoutineMaintenanceBox(context);
   }
 
-  List<VehicleNodeDataWidgetConfiguration> get vehicleNodeDataList =>
-      List.unmodifiable(_vehicleNodeDataList);
+  Stream<BoxEvent>? routineMaintenanceStream;
+  StreamSubscription<BoxEvent>? subscription;
+  Future<void> subscribeToRoutineMaintenanceBox(BuildContext context) async {
+    routineMaintenanceStream =
+        await _routineMaintenanceService.getRoutineMaintenanceStream();
+    subscription = routineMaintenanceStream?.listen((event) {
+      _getRoutineMaintenanceList(context);
+    });
+  }
 
-  Future<void> getRoutineMaintenanceList(BuildContext context) async {
+  int get vehicleNodeAmount => _vehicleNodeDataList.length;
+
+  VehicleNodeHeaderWidgetConfiguration? getVehicleNodeHeaderWidgetConfiguration(
+      int index, bool isActive) {
+    final keys = _vehicleNodeDataList.keys.toList();
+    keys.sort();
+    if (index < keys.length) {
+      return VehicleNodeHeaderWidgetConfiguration(keys[index], isActive);
+    }
+  }
+
+  List<ExtendedRoutineMaintenance>? getRoutineMaintenanceList(int index) {
+    final keys = _vehicleNodeDataList.keys.toList();
+    keys.sort();
+    if (index < keys.length) {
+      return _vehicleNodeDataList[keys[index]];
+    }
+  }
+
+  WorkInfoWidgetConfiguration? getWorkInfoWidgetConfiguration(
+      int index, int workIndex) {
+    final keys = _vehicleNodeDataList.keys.toList();
+    keys.sort();
+    if (index < keys.length) {
+      final routineMaintenanceList = _vehicleNodeDataList[keys[index]];
+      if (routineMaintenanceList != null &&
+          workIndex < routineMaintenanceList.length) {
+        return WorkInfoWidgetConfiguration(routineMaintenanceList[workIndex]);
+      }
+    }
+  }
+
+  Future<void> _getRoutineMaintenanceList(BuildContext context) async {
     isDataLoading = true;
     notifyListeners();
     try {
+      _vehicleNodeDataList.clear();
+
       final routineMaintenanceList = await _routineMaintenanceService
-          .getVehicleRoutineMaintenancesFromHive(
-              vehicleObjectId: _vehicleObjectId);
+          .getVehicleRoutineMaintenancesFromHive();
 
       for (var routineMaintenance in routineMaintenanceList) {
         final vehicleNode = routineMaintenance.vehicleNode;
-        switch (vehicleNode) {
-          case 'Engine':
-            _engineWorkList.add(routineMaintenance);
-            break;
-          case 'Bodywork':
-            _bodyworkWorkList.add(routineMaintenance);
-            break;
-          case 'Transmission':
-            _transmissionWorkList.add(routineMaintenance);
-            break;
-          case 'Chassis':
-            _chassisWorkList.add(routineMaintenance);
-            break;
-          case 'Technical liquids':
-            _technicalLiquidsWorkList.add(routineMaintenance);
-            break;
-          case 'Other nodes':
-            _otherNodesWorkList.add(routineMaintenance);
-            break;
+        if (_vehicleNodeDataList.containsKey(vehicleNode)) {
+          _vehicleNodeDataList[vehicleNode]
+              ?.add(ExtendedRoutineMaintenance(routineMaintenance));
+        } else {
+          _vehicleNodeDataList[vehicleNode] = [
+            ExtendedRoutineMaintenance(routineMaintenance)
+          ];
         }
-      }
-
-      if (_engineWorkList.isNotEmpty) {
-        _vehicleNodeDataList.add(
-          VehicleNodeDataWidgetConfiguration(
-              iconName: AppSvgs.engine,
-              title: 'ДВС',
-              routineMaintenanceList: _engineWorkList),
-        );
-      }
-
-      if (_bodyworkWorkList.isNotEmpty) {
-        _vehicleNodeDataList.add(
-          VehicleNodeDataWidgetConfiguration(
-              iconName: AppSvgs.bodywork,
-              title: 'Кузов',
-              routineMaintenanceList: _bodyworkWorkList),
-        );
-      }
-
-      if (_transmissionWorkList.isNotEmpty) {
-        _vehicleNodeDataList.add(
-          VehicleNodeDataWidgetConfiguration(
-              iconName: AppSvgs.transmission,
-              title: 'КПП',
-              routineMaintenanceList: _transmissionWorkList),
-        );
-      }
-
-      if (_chassisWorkList.isNotEmpty) {
-        _vehicleNodeDataList.add(
-          VehicleNodeDataWidgetConfiguration(
-              iconName: AppSvgs.chassis,
-              title: 'Ходовая',
-              routineMaintenanceList: _chassisWorkList),
-        );
-      }
-
-      if (_technicalLiquidsWorkList.isNotEmpty) {
-        _vehicleNodeDataList.add(
-          VehicleNodeDataWidgetConfiguration(
-              iconName: AppSvgs.technicalLiquids,
-              title: 'Технические жидкости',
-              routineMaintenanceList: _technicalLiquidsWorkList),
-        );
-      }
-
-      if (_otherNodesWorkList.isNotEmpty) {
-        _vehicleNodeDataList.add(
-          VehicleNodeDataWidgetConfiguration(
-              iconName: AppSvgs.otherNodes,
-              title: 'Прочие узлы',
-              routineMaintenanceList: _otherNodesWorkList),
-        );
       }
     } on ApiClientException catch (exception) {
       switch (exception.type) {
@@ -138,20 +111,35 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
   }
 
   Future<void> resetEngineHoursValue({
-    required String routineMaintenanceObjectId,
     required int vehicleNodeDataIndex,
     required int routineMaintenanceIndex,
     required BuildContext context,
   }) async {
-    isRoutineMaintenanceUpdating = true;
+    final keys = _vehicleNodeDataList.keys.toList();
+    keys.sort();
+
+    if (vehicleNodeDataIndex > keys.length) return;
+    final key = keys[vehicleNodeDataIndex];
+    final routineMaintenaceList = _vehicleNodeDataList[key];
+    if (routineMaintenaceList == null ||
+        routineMaintenanceIndex > routineMaintenaceList.length) return;
+    final routineMaintenanceObjectId =
+        routineMaintenaceList[routineMaintenanceIndex]
+            .routineMaintenance
+            .objectId;
+    _vehicleNodeDataList[key]?[routineMaintenanceIndex].isUpdating = true;
     notifyListeners();
     try {
       await _routineMaintenanceService.resetEngineHoursValue(
           routineMaintenanceObjectId: routineMaintenanceObjectId);
-
-      _vehicleNodeDataList[vehicleNodeDataIndex]
-          .routineMaintenanceList[routineMaintenanceIndex]
-          .engineHoursValue = 0;
+      final hoursInfo = await _routineMaintenanceService
+          .getVehicleRoutineMaintenanceHoursInfo();
+      final vehicle = await _vehicleService.getVehicleFromHive(
+          vehicleObjectId: _vehicleObjectId);
+      if (hoursInfo != vehicle?.hoursInfo) {
+        await _vehicleService.updateVehicle(
+            vehicleId: _vehicleObjectId, hoursInfo: hoursInfo);
+      }
     } on ApiClientException catch (exception) {
       switch (exception.type) {
         case ApiClientExceptionType.network:
@@ -167,24 +155,80 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
     } catch (e) {
       ErrorDialogWidget.showUnknownError(context);
     }
-    isRoutineMaintenanceUpdating = false;
+    _vehicleNodeDataList[key]?[routineMaintenanceIndex].isUpdating = false;
     notifyListeners();
   }
 
-  void openWritingEngineHoursScreen(BuildContext context) {
-    Navigator.of(context)
-        .pushNamed(MainNavigationRouteNames.writingEngineHoursScreen);
+  @override
+  Future<void> dispose() async {
+    await _routineMaintenanceService.dispose();
+    await _vehicleService.dispose();
+    await subscription?.cancel();
+    super.dispose();
   }
 }
 
-class VehicleNodeDataWidgetConfiguration {
-  final String iconName;
-  final String title;
-  final List<RoutineMaintenance> routineMaintenanceList;
+class VehicleNodeHeaderWidgetConfiguration {
+  late String iconName;
+  late String title;
+  late Color color;
+  late IconData arrowIcon;
 
-  VehicleNodeDataWidgetConfiguration({
-    required this.iconName,
-    required this.title,
-    required this.routineMaintenanceList,
-  });
+  VehicleNodeHeaderWidgetConfiguration(String vehicleNode, bool isActive) {
+    color = isActive ? AppColors.blue : AppColors.black;
+    arrowIcon = isActive
+        ? Icons.keyboard_arrow_up_rounded
+        : Icons.keyboard_arrow_down_rounded;
+    switch (vehicleNode) {
+      case 'Engine':
+        iconName = AppSvgs.engine;
+        title = 'ДВС';
+        break;
+      case 'Bodywork':
+        iconName = AppSvgs.bodywork;
+        title = 'Кузов';
+        break;
+      case 'Transmission':
+        iconName = AppSvgs.transmission;
+        title = 'КПП';
+        break;
+      case 'Chassis':
+        iconName = AppSvgs.chassis;
+        title = 'Ходовая';
+        break;
+      case 'Technical liquids':
+        iconName = AppSvgs.technicalLiquids;
+        title = 'Технические жидкости';
+        break;
+      case 'Other nodes':
+        iconName = AppSvgs.otherNodes;
+        title = 'Прочие узлы';
+        break;
+    }
+  }
+}
+
+class WorkInfoWidgetConfiguration {
+  late String title;
+  late String engineHoursReserve;
+  late double progressIndicatorValue;
+  late bool isUpdating;
+  WorkInfoWidgetConfiguration(
+      ExtendedRoutineMaintenance extendedRoutineMaintenance) {
+    final routineMaintenance = extendedRoutineMaintenance.routineMaintenance;
+    title = routineMaintenance.title;
+    final remainEngineHours =
+        routineMaintenance.periodicity - routineMaintenance.engineHoursValue;
+    engineHoursReserve =
+        'Осталось $remainEngineHours/${routineMaintenance.periodicity} мч';
+    progressIndicatorValue = remainEngineHours / routineMaintenance.periodicity;
+    isUpdating = extendedRoutineMaintenance.isUpdating;
+  }
+}
+
+class ExtendedRoutineMaintenance {
+  final RoutineMaintenance routineMaintenance;
+  bool isUpdating = false;
+
+  ExtendedRoutineMaintenance(this.routineMaintenance);
 }

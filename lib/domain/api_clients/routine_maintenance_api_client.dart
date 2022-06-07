@@ -4,33 +4,75 @@ import 'package:autospectechnics/domain/parse_database_string_names/parse_object
 import 'package:parse_server_sdk/parse_server_sdk.dart';
 
 class RoutineMaintenanceApiClient {
-  //TODO: сделать обработку ошибок, убрать принты и как-то сообщать пользователю об ошибке или успехе
+  Future<String?> saveRoutineMaintenance({
+    required String title,
+    required int periodicity,
+    required int engineHoursValue,
+    required String vehicleNode,
+    required String vehicleObjectId,
+  }) async {
+    var routineMaintenance = ParseObject(ParseObjectNames.routineMaintenance);
+    routineMaintenance.set(RoutineMaintenanceFieldNames.title, title);
+    routineMaintenance.set(
+        RoutineMaintenanceFieldNames.periodicity, periodicity);
+    routineMaintenance.set(
+        RoutineMaintenanceFieldNames.engineHoursValue, engineHoursValue);
+    routineMaintenance.set(
+        RoutineMaintenanceFieldNames.vehicleNode, vehicleNode);
+    routineMaintenance.set(
+        'vehicle',
+        (ParseObject(ParseObjectNames.vehicle)..objectId = vehicleObjectId)
+            .toPointer());
 
-  // Future<void> saveRoutineMaintenance({
-  //   required String title,
-  //   required int periodicity,
-  //   required int engineHoursValue,
-  //   required String vehicleNode,
-  // }) async {
-  //   var routineMaintenance = ParseObject(ParseObjectNames.routineMaintenance);
-  //   routineMaintenance.set(RoutineMaintenanceFieldNames.title, title);
-  //   routineMaintenance.set(
-  //       RoutineMaintenanceFieldNames.periodicity, periodicity);
-  //   routineMaintenance.set(
-  //       RoutineMaintenanceFieldNames.engineHoursValue, engineHoursValue);
-  //   routineMaintenance.set(
-  //       RoutineMaintenanceFieldNames.vehicleNode, vehicleNode);
+    final ParseResponse apiResponse = await routineMaintenance.save();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    return routineMaintenance.objectId;
+  }
 
-  //   final ParseResponse apiResponse = await routineMaintenance.save();
+  Future<String?> updateRoutineMaintenance({
+    required String objectId,
+    String? title,
+    int? periodicity,
+    int? engineHoursValue,
+    String? vehicleNode,
+  }) async {
+    var routineMaintenance = ParseObject(ParseObjectNames.routineMaintenance);
+    routineMaintenance.objectId = objectId;
 
-  //   if (apiResponse.success && apiResponse.results != null) {
-  //     print('Топчик');
-  //   } else if (apiResponse.error?.exception is SocketException) {
-  //     print('Проверьте подключение к интернету');
-  //   } else {
-  //     print('Нет заказов');
-  //   }
-  // }
+    if (title != null) {
+      routineMaintenance.set('title', title);
+    }
+
+    if (periodicity != null) {
+      routineMaintenance.set('periodicity', periodicity);
+    }
+
+    if (engineHoursValue != null) {
+      routineMaintenance.set('engineHoursValue', engineHoursValue);
+    }
+
+    if (vehicleNode != null) {
+      routineMaintenance.set('vehicleNode', vehicleNode);
+    }
+
+    if (title != null ||
+        vehicleNode != null ||
+        periodicity != null ||
+        engineHoursValue != null) {
+      final ParseResponse apiResponse = await routineMaintenance.save();
+      ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    }
+    return routineMaintenance.objectId;
+  }
+
+  Future<void> deleteRoutineMaintenance(String routineMaintenanceId) async {
+    final parseRoutineMaintenance =
+        ParseObject(ParseObjectNames.routineMaintenance)
+          ..objectId = routineMaintenanceId;
+
+    final ParseResponse apiResponse = await parseRoutineMaintenance.delete();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+  }
 
   Future<List<RoutineMaintenance>> getVehicleRoutineMaintenanceList({
     required String vehicleObjectId,
@@ -59,39 +101,6 @@ class RoutineMaintenanceApiClient {
       }
     }
     return routineMaintenanceList;
-  }
-
-  Future<void> updateRoutineMaintenance({
-    required String objectId,
-    String? title,
-    int? periodicity,
-    int? engineHoursValue,
-    String? vehicleNode,
-  }) async {
-    var routineMaintenance = ParseObject(ParseObjectNames.routineMaintenance);
-    routineMaintenance.objectId = objectId;
-
-    if (title != null) {
-      routineMaintenance.set(RoutineMaintenanceFieldNames.title, title);
-    }
-
-    if (periodicity != null) {
-      routineMaintenance.set(
-          RoutineMaintenanceFieldNames.periodicity, periodicity);
-    }
-
-    if (engineHoursValue != null) {
-      routineMaintenance.set(
-          RoutineMaintenanceFieldNames.engineHoursValue, engineHoursValue);
-    }
-
-    if (vehicleNode != null) {
-      routineMaintenance.set(
-          RoutineMaintenanceFieldNames.vehicleNode, vehicleNode);
-    }
-
-    final ParseResponse apiResponse = await routineMaintenance.save();
-    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
   }
 }
 

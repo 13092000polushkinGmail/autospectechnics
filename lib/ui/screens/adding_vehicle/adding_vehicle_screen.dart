@@ -32,9 +32,6 @@ class _BodyWidget extends StatelessWidget {
         VehicleFormMainInfoWidget(),
         VehicleTypePickerWidget(),
         RegulationsWidget(),
-        //TODO Виджеты фейковые поэтому при нажатии на последнюю кнопку далее ломается приложение так как индекс выходит за границы массива
-        RegulationsWidget(),
-        RegulationsWidget(),
       ],
     );
   }

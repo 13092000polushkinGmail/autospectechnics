@@ -4,6 +4,7 @@ import 'package:autospectechnics/ui/global_widgets/form_widgets/adding_photo_wid
 import 'package:autospectechnics/ui/global_widgets/form_widgets/text_field_template_widget.dart';
 import 'package:autospectechnics/ui/screens/adding_vehicle/adding_vehicle_view_model.dart';
 import 'package:autospectechnics/ui/global_widgets/stepper_widget.dart';
+import 'package:autospectechnics/ui/screens/main_tabs/widgets/network_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -21,11 +22,6 @@ class VehicleFormMainInfoWidget extends StatelessWidget {
         hasBackButton: true,
       ),
       body: const _BodyWidget(),
-      // floatingActionButton: FloatingButtonWidget(
-      //   child: const Text('Сохранить'),
-      //   onPressed: () => model.saveToDatabase(context),
-      // ),
-      // //TODO Временно заменил эту кнопку, чтобы проверить, как сохраняется транспортное средство
       floatingActionButton: FloatingButtonWidget(
         child: const Text('Далее'),
         onPressed: () => model.incrementCurrentTabIndex(),
@@ -58,7 +54,7 @@ class _BodyWidget extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         TextFieldTemplateWidget(
-          controller: model.mileageTextControler,
+          controller: model.mileageTextController,
           hintText: 'Пробег',
           keyboardType: TextInputType.number,
         ),
@@ -86,19 +82,36 @@ class _PhotoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<AddingVehicleViewModel>();
-    final image = model.image;
-    return image == null
-        ? AddingPhotoWidget(
-            width: 328,
-            height: 192,
-            onTap: () => model.pickImage(context: context),
-          )
-        : SizedBox(
-          height: 192,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: image,
-          ),
+    final pickedImage = model.pickedImage;
+    final imageFromServerIdUrl = model.imageFromServerIdURL;
+    return imageFromServerIdUrl.isEmpty
+        ? pickedImage == null
+            ? AddingPhotoWidget(
+                width: 328,
+                height: 192,
+                onTap: () => model.pickImage(context: context),
+              )
+            : GestureDetector(
+              onTap: () => model.onPickedImageTap(context),
+                child: SizedBox(
+                  height: 192,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: pickedImage,
+                  ),
+                ),
+              )
+        : GestureDetector(
+          onTap: () => model.onServerImageTap(context),
+          child: SizedBox(
+              height: 192,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: NetworkImageWidget(
+                  url: imageFromServerIdUrl.values.first,
+                ),
+              ),
+            ),
         );
   }
 }

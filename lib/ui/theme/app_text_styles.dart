@@ -43,4 +43,11 @@ abstract class AppTextStyles {
     fontWeight: FontWeight.w400,
     height: 12 / 9,
   );
+
+  static const timeBig = TextStyle(
+    fontFamily: AppFontFamilies.openSans,
+    fontSize: 32,
+    fontWeight: FontWeight.w600,
+    height: 32 / 32,
+  );
 }

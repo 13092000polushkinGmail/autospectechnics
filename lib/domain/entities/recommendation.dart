@@ -5,26 +5,26 @@ import 'package:parse_server_sdk/parse_server_sdk.dart';
 part 'recommendation.g.dart';
 
 @HiveType(typeId: 6)
-class Recommendation {
+class Recommendation extends HiveObject {
   @HiveField(0)
   final String objectId;
   @HiveField(1)
-  final String title;
+  String title;
   @HiveField(2)
-  final String vehicleNode;
+  String vehicleNode;
   @HiveField(3)
-  final String description;
+  String description;
   @HiveField(4)
-  final bool isCompleted;
+  bool isCompleted;
   @HiveField(5)
-  final List<String> photosURL;
+  Map<String, String> imagesIdUrl;
   Recommendation({
     required this.objectId,
     required this.title,
     required this.vehicleNode,
     required this.description,
     required this.isCompleted,
-    required this.photosURL,
+    required this.imagesIdUrl,
   });
 
   static Recommendation getRecommendation({
@@ -39,13 +39,14 @@ class Recommendation {
     final description = recommendationObject.get<String>('description') ??
         'Описание не предоставлено';
     final isCompleted = recommendationObject.get<bool>('isCompleted') ?? false;
-    List<String> photosURL = [];
+    Map<String, String> imagesIdUrl = {};
     for (var imageParseObject in imagesList) {
+      final imageId = imageParseObject.objectId;
       String? imageURL;
       final imageFile = imageParseObject.get<ParseFileBase>('file');
       imageURL = imageFile?.url;
-      if (imageURL != null) {
-        photosURL.add(imageURL);
+      if (imageId != null && imageURL != null) {
+        imagesIdUrl[imageId] = imageURL;
       }
     }
 
@@ -55,8 +56,32 @@ class Recommendation {
       vehicleNode: vehicleNode,
       description: description,
       isCompleted: isCompleted,
-      photosURL: photosURL,
+      imagesIdUrl: imagesIdUrl,
     );
+  }
+
+  void updateRecommendation(
+    String? title,
+    String? vehicleNode,
+    String? description,
+    bool? isCompleted,
+    Map<String, String>? imagesIdUrl,
+  ) {
+    if (title != null) {
+      this.title = title;
+    }
+    if (vehicleNode != null) {
+      this.vehicleNode = vehicleNode;
+    }
+    if (description != null) {
+      this.description = description;
+    }
+    if (isCompleted != null) {
+      this.isCompleted = isCompleted;
+    }
+    if (imagesIdUrl != null && imagesIdUrl.isNotEmpty) {
+      this.imagesIdUrl.addAll(imagesIdUrl);
+    }
   }
 
   @override
@@ -69,7 +94,7 @@ class Recommendation {
         other.vehicleNode == vehicleNode &&
         other.description == description &&
         other.isCompleted == isCompleted &&
-        listEquals(other.photosURL, photosURL);
+        mapEquals(other.imagesIdUrl, imagesIdUrl);
   }
 
   @override
@@ -79,6 +104,6 @@ class Recommendation {
         vehicleNode.hashCode ^
         description.hashCode ^
         isCompleted.hashCode ^
-        photosURL.hashCode;
+        imagesIdUrl.hashCode;
   }
 }

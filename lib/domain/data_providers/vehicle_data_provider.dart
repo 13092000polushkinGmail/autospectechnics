@@ -1,48 +1,110 @@
-import 'package:autospectechnics/domain/data_providers/box_manager.dart';
-import 'package:autospectechnics/domain/entities/vehicle.dart';
 import 'package:hive/hive.dart';
 
+import 'package:autospectechnics/domain/data_providers/box_manager.dart';
+import 'package:autospectechnics/domain/entities/vehicle.dart';
+
 class VehicleDataProvider {
-  Future<Box<Vehicle>> _openBox() async {
+  late Future<Box<Vehicle>> _futureBox;
+  VehicleDataProvider() {
     if (!Hive.isAdapterRegistered(3)) {
       Hive.registerAdapter(RoutineMaintenanceHoursInfoAdapter());
     }
-    return await BoxManager.instance.openBox(
+    _futureBox = BoxManager.instance.openBox(
       name: 'vehicles_box',
       typeId: 2,
       adapter: VehicleAdapter(),
     );
   }
 
+  Future<Stream<BoxEvent>> getVehicleStream() async {
+    final box = await _futureBox;
+    final vehicleStream = box.watch();
+    return vehicleStream;
+  }
+
   Future<void> putVehicleToHive(Vehicle vehicle) async {
-    final box = await _openBox();
-    //TODO Если объект существует, нужно сверять с добавляемым, если отличаются менять на новый, если такой же ничего не делать. Это на случай, если подписываться на изменения в box, чтобы лишний раз не обновлять виджет
-    // if (box.containsKey(breakage.objectId)) return;
-    await box.put(vehicle.objectId, vehicle);
-    await BoxManager.instance.closeBox(box);
+    final box = await _futureBox;
+    final vehicleFromHive = box.get(vehicle.objectId);
+    if (vehicleFromHive == null || vehicleFromHive != vehicle) {
+      await box.put(vehicle.objectId, vehicle);
+    }
+  }
+
+  Future<void> updateVehicleInHive({
+    required String vehicleId,
+    String? model,
+    int? mileage,
+    int? vehicleType,
+    String? licensePlate,
+    String? description,
+    int? breakageDangerLevel,
+    RoutineMaintenanceHoursInfo? hoursInfo,
+    Map<String, String>? imageIdUrl,
+  }) async {
+    final box = await _futureBox;
+    final vehicle = box.get(vehicleId);
+    if (vehicle != null) {
+      final oldVehicle = vehicle.copyWith();
+      vehicle.updateVehicle(
+        model,
+        mileage,
+        vehicleType,
+        licensePlate,
+        description,
+        breakageDangerLevel,
+        hoursInfo,
+        imageIdUrl,
+      );
+      if (vehicle != oldVehicle) {
+        await vehicle.save();
+      }
+    }
+  }
+
+  Future<void> deleteVehicleFromHive(String vehicleId) async {
+    final box = await _futureBox;
+    await box.delete(vehicleId);
+    final lowerVehicleId = vehicleId.toString().toLowerCase();
+    Hive.deleteBoxFromDisk('recommendation_box_$lowerVehicleId');
+    Hive.deleteBoxFromDisk('routine_maintenance_box_$lowerVehicleId');
+    Hive.deleteBoxFromDisk('breakage_box_$lowerVehicleId');
+    Hive.deleteBoxFromDisk('completed_repair_box_$lowerVehicleId');
   }
 
   Future<List<Vehicle>> getVehiclesListFromHive() async {
-    final box = await _openBox();
+    final box = await _futureBox;
     final list = box.values.toList();
-    await BoxManager.instance.closeBox(box);
     return list;
   }
 
   Future<Vehicle?> getVehicleFromHive(String vehicleId) async {
-    final box = await _openBox();
+    final box = await _futureBox;
     final vehicle = box.get(vehicleId);
-    await BoxManager.instance.closeBox(box);
     return vehicle;
   }
 
-  Future<void> deleteAllVehiclesFromHive() async {
-    final box = await _openBox();
-    await box.clear();
-    await BoxManager.instance.closeBox(box);
+  Future<void> deleteAllUnnecessaryVehiclesFromHive(
+      List<Vehicle> vehiclesFromServer) async {
+    final box = await _futureBox;
+    final keysToDelete = box.keys.toList();
+    for (var vehicle in vehiclesFromServer) {
+      if (keysToDelete.contains(vehicle.objectId)) {
+        keysToDelete.remove(vehicle.objectId);
+      }
+    }
+    for (var key in keysToDelete) {
+      box.delete(key);
+      final vehicleId = key.toString().toLowerCase();
+      Hive.deleteBoxFromDisk('recommendation_box_$vehicleId');
+      Hive.deleteBoxFromDisk('routine_maintenance_box_$vehicleId');
+      Hive.deleteBoxFromDisk('breakage_box_$vehicleId');
+      Hive.deleteBoxFromDisk('completed_repair_box_$vehicleId');
+      //TODO Наверное еще удалить записи из таблицы Vehicle-BuildingObject
+    }
   }
 
-  // Future<void> closeDataProvider() async {
-  //   await BoxManager.instance.closeBox(await futureBox);
-  // }
+  Future<void> dispose() async {
+    final box = await _futureBox;
+    await BoxManager.instance.closeBox(box);
+  }
 }

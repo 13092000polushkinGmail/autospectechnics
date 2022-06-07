@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:autospectechnics/ui/global_widgets/confirm_dialog_widget.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:autospectechnics/domain/date_formatter.dart';
@@ -10,37 +13,78 @@ import 'package:autospectechnics/domain/services/vehicle_bulding_object_service.
 import 'package:autospectechnics/domain/services/vehicle_service.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
 import 'package:autospectechnics/ui/navigation/main_navigation.dart';
+import 'package:hive/hive.dart';
 
 class ObjectMainInfoViewModel extends ChangeNotifier {
   final String _buildingObjectId;
 
   final _buildingObjectService = BuildingObjectService();
-  final _vehicleBuildingObjectService = VehicleBuildingObjectService();
+  late final _vehicleBuildingObjectService =
+      VehicleBuildingObjectService(_buildingObjectId);
   final _vehicleService = VehicleService();
 
   bool isLoadingProgress = false;
   int _vehicleStatus = -2;
   BuildingObject? _buildingObject;
-  List<ExtendedVehicle> _vehiclesList = [];
+  final List<ExtendedVehicle> _vehiclesList = [];
 
   ObjectMainInfoViewModel(
     this._buildingObjectId,
     BuildContext context,
   ) {
     getBuildingObjectInfo(context);
+    subscribeToVehicleBox(context);
+    subscribeToBuildingObjectBox(context);
+    subscribeToVehicleBuildingObjectBox(context);
   }
 
-  int get vehiclesListLength => _vehiclesList.length;
+  List<ExtendedVehicle> get vehiclesList => _vehiclesList;
+
   InformationWidgetConfiguration get informationWidgetConfiguration =>
       InformationWidgetConfiguration(_buildingObject, _vehicleStatus);
-  VehicleWidgetConfiguration getVehicleWidgetConfiguration(int index) =>
-      VehicleWidgetConfiguration(_vehiclesList[index]);
+
+  VehicleWidgetConfiguration? getVehicleWidgetConfiguration(int index) {
+    if (index < _vehiclesList.length) {
+      return VehicleWidgetConfiguration(_vehiclesList[index]);
+    }
+  }
+
+  Stream<BoxEvent>? vehicleStream;
+  StreamSubscription<BoxEvent>? vehicleSubscription;
+  Future<void> subscribeToVehicleBox(BuildContext context) async {
+    vehicleStream = await _vehicleService.getVehicleStream();
+    vehicleSubscription = vehicleStream?.listen((event) {
+      getBuildingObjectInfo(context);
+    });
+  }
+
+  Stream<BoxEvent>? buildingObjectStream;
+  StreamSubscription<BoxEvent>? buildingObjectSubscription;
+  Future<void> subscribeToBuildingObjectBox(BuildContext context) async {
+    buildingObjectStream =
+        await _buildingObjectService.getBuildingObjectStream();
+    buildingObjectSubscription = buildingObjectStream?.listen((event) {
+      getBuildingObjectInfo(context);
+    });
+  }
+
+  Stream<BoxEvent>? vehicleBuildingObjectStream;
+  StreamSubscription<BoxEvent>? vehicleBuildingObjectSubscription;
+  Future<void> subscribeToVehicleBuildingObjectBox(BuildContext context) async {
+    vehicleBuildingObjectStream =
+        await _vehicleBuildingObjectService.getVehicleBuildingObjectStream();
+    vehicleBuildingObjectSubscription =
+        vehicleBuildingObjectStream?.listen((event) {
+      getBuildingObjectInfo(context);
+    });
+  }
 
   Future<void> getBuildingObjectInfo(BuildContext context) async {
     isLoadingProgress = true;
     notifyListeners();
-
     try {
+      _vehiclesList.clear();
+      _vehicleStatus = -2;
       _buildingObject = await _buildingObjectService.getBuildingObjectFromHive(
           buildingObjectId: _buildingObjectId);
       final vehicleBuildingObjectList = await _vehicleBuildingObjectService
@@ -49,8 +93,9 @@ class ObjectMainInfoViewModel extends ChangeNotifier {
         final vehicle = await _vehicleService.getVehicleFromHive(
             vehicleObjectId: vehicleBuildingObject.vehicleId);
         if (vehicle != null) {
-          final vehicleStatus = Vehicle.getVehicleDangerLevel(
-              vehicle, vehicleBuildingObject.requiredEngineHours);
+          final vehicleStatus =
+              vehicle.getVehicleStatusFromRoutineMaintenanceInfo(
+                  vehicleBuildingObject.requiredEngineHours);
           if (vehicleStatus > _vehicleStatus) {
             _vehicleStatus = vehicleStatus;
           }
@@ -82,30 +127,81 @@ class ObjectMainInfoViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> onDeleteButtonTap(BuildContext context) async {
+    final isConfirmed = await ConfirmDialogWidget.isConfirmed(context: context);
+    if (!isConfirmed) return;
+    try {
+      await _vehicleBuildingObjectService
+          .deleteVehicleBuildingObjectsOfBuildingObject(_buildingObjectId);
+      await _buildingObjectService.deleteBuildingObject(_buildingObjectId);
+      Navigator.of(context).pop();
+    } on ApiClientException catch (exception) {
+      switch (exception.type) {
+        case ApiClientExceptionType.network:
+          ErrorDialogWidget.showConnectionError(context);
+          break;
+        case ApiClientExceptionType.emptyResponse:
+          ErrorDialogWidget.showEmptyResponseError(context);
+          break;
+        case ApiClientExceptionType.other:
+          ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+          break;
+      }
+    } catch (e) {
+      ErrorDialogWidget.showUnknownError(context);
+    }
+  }
+
+  void openUpdatingBuildingObjectScreen(BuildContext context) {
+    Navigator.of(context).pushNamed(
+      MainNavigationRouteNames.addingObjectScreen,
+      arguments: _buildingObjectId,
+    );
+  }
+
   void openVehicleInfoScreen(BuildContext context, int index) {
     Navigator.of(context).pushNamed(
       MainNavigationRouteNames.vehicleMainInfoScreen,
       arguments: _vehiclesList[index].vehicle.objectId,
     );
   }
+
+  @override
+  Future<void> dispose() async {
+    await _vehicleService.dispose();
+    await _vehicleBuildingObjectService.dispose();
+    await _buildingObjectService.dispose();
+    vehicleSubscription?.cancel();
+    buildingObjectSubscription?.cancel();
+    vehicleBuildingObjectSubscription?.cancel();
+    super.dispose();
+  }
 }
 
 class InformationWidgetConfiguration {
-  late String startDate;
-  late String finishDate;
+  late String title;
+  String? date;
   late List<String> photosURL;
-  late DaysInfo daysInfo;
+  String? days;
   String? breakageIcon;
   late String description;
   late String buildingObjectTitle;
 
   InformationWidgetConfiguration(
       BuildingObject? buildingObject, int vehicleStatus) {
-    startDate = DateFormatter.getFormattedDate(buildingObject?.startDate);
-    finishDate = DateFormatter.getFormattedDate(buildingObject?.finishDate);
-    photosURL = buildingObject?.photosURL ?? [];
-    daysInfo = DateFormatter.getDaysInfo(
+    title = buildingObject?.title ?? '';
+    final startDate = DateFormatter.getFormattedDate(buildingObject?.startDate);
+    final finishDate =
+        DateFormatter.getFormattedDate(buildingObject?.finishDate);
+    if (startDate.isNotEmpty && finishDate.isNotEmpty) {
+      date = '$startDate - $finishDate';
+    }
+    photosURL = buildingObject?.imagesIdUrl.values.toList() ?? [];
+    final daysInfo = DateFormatter.getDaysInfo(
         buildingObject?.startDate, buildingObject?.finishDate);
+    if (daysInfo != null) {
+      days = '${daysInfo.daysAmount} ${daysInfo.daysText.toLowerCase()}';
+    }
     buildingObjectTitle = buildingObject?.title ?? 'Название объекта';
     if (vehicleStatus >= -1) {
       breakageIcon = BreakageDangerLevel(vehicleStatus).iconName;
@@ -115,20 +211,26 @@ class InformationWidgetConfiguration {
 }
 
 class VehicleWidgetConfiguration {
-  late String? imageURL;
+  String? imageURL;
   late String title;
   late String breakageIcon;
-  String? remainEngineHours;
-  late String requiredEngineHours;
+  String? engineHoursInfo;
   VehicleWidgetConfiguration(ExtendedVehicle extendedVehicle) {
-    imageURL = extendedVehicle.vehicle.imageURL;
+    final url = extendedVehicle.vehicle.imageIdUrl.values.toList();
+    if (url.isNotEmpty) {
+      imageURL = url.first;
+    }
     title = extendedVehicle.vehicle.model;
-    breakageIcon = BreakageDangerLevel(Vehicle.getVehicleDangerLevel(
-            extendedVehicle.vehicle, extendedVehicle.requiredEngineHours))
+    breakageIcon = BreakageDangerLevel(extendedVehicle.vehicle
+            .getVehicleStatusFromRoutineMaintenanceInfo(
+                extendedVehicle.requiredEngineHours))
         .iconName;
-    remainEngineHours =
-        extendedVehicle.vehicle.hoursInfo?.remainEngineHours.toString();
-    requiredEngineHours = extendedVehicle.requiredEngineHours.toString();
+    final remainEngineHours =
+        extendedVehicle.vehicle.hoursInfo?.remainEngineHours;
+    final requiredEngineHours = extendedVehicle.requiredEngineHours;
+    if (remainEngineHours != null) {
+      engineHoursInfo = '$remainEngineHours/$requiredEngineHours';
+    }
   }
 }
 

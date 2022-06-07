@@ -42,13 +42,22 @@ class _BodyWidget extends StatelessWidget {
         .select((RecommendationsViewModel vm) => vm.recommendationListLength);
     return isLoadingProgress
         ? const Center(child: CircularProgressIndicator())
-        : ListView.separated(
-            itemCount: recommendationListLength,
-            itemBuilder: (_, index) => _RecommendationCardWidget(index: index),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            padding:
-                const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
-          );
+        : recommendationListLength == 0
+            ? Center(
+                child: Text(
+                  'Рекомендации не заданы',
+                  style:
+                      AppTextStyles.regular16.copyWith(color: AppColors.black),
+                ),
+              )
+            : ListView.separated(
+                itemCount: recommendationListLength,
+                itemBuilder: (_, index) =>
+                    _RecommendationCardWidget(index: index),
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                padding: const EdgeInsets.only(
+                    left: 16, right: 16, top: 16, bottom: 88),
+              );
   }
 }
 

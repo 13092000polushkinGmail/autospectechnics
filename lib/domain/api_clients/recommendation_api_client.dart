@@ -26,7 +26,6 @@ class RecommendationApiClient {
     return recommendation.objectId;
   }
 
-  //TODO Не работает для фотографий
   Future<String?> updateRecommendationInDatabase({
     required String objectId,
     String? title,
@@ -53,9 +52,22 @@ class RecommendationApiClient {
       recommendation.set('isCompleted', isCompleted);
     }
 
-    final ParseResponse apiResponse = await recommendation.save();
-    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    if (title != null ||
+        vehicleNode != null ||
+        description != null ||
+        isCompleted != null) {
+      final ParseResponse apiResponse = await recommendation.save();
+      ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    }
     return recommendation.objectId;
+  }
+
+  Future<void> deleteRecommendationFromDatabase(String recommendationId) async {
+    final parseRecommendation = ParseObject(ParseObjectNames.recommendation)
+      ..objectId = recommendationId;
+
+    final ParseResponse apiResponse = await parseRecommendation.delete();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
   }
 
   Future<List<Recommendation>> getVehicleRecommendationList({

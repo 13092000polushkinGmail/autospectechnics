@@ -28,6 +28,52 @@ class BreakageApiClient {
     return breakage.objectId;
   }
 
+  Future<String?> updateBreakage({
+    required String objectId,
+    String? title,
+    String? vehicleNode,
+    int? dangerLevel,
+    String? description,
+    bool? isFixed,
+  }) async {
+    var breakage = ParseObject(ParseObjectNames.breakage);
+    breakage.objectId = objectId;
+
+    if (title != null) {
+      breakage.set('title', title);
+    }
+    if (vehicleNode != null) {
+      breakage.set('vehicleNode', vehicleNode);
+    }
+    if (dangerLevel != null) {
+      breakage.set('dangerLevel', dangerLevel);
+    }
+    if (description != null) {
+      breakage.set('description', description);
+    }
+    if (isFixed != null) {
+      breakage.set('isFixed', isFixed);
+    }
+
+    if (title != null ||
+        vehicleNode != null ||
+        dangerLevel != null ||
+        description != null ||
+        isFixed != null) {
+      final ParseResponse apiResponse = await breakage.save();
+      ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+    }
+    return breakage.objectId;
+  }
+
+  Future<void> deleteBreakage(String breakageId) async {
+    final parseBreakage = ParseObject(ParseObjectNames.breakage)
+      ..objectId = breakageId;
+
+    final ParseResponse apiResponse = await parseBreakage.delete();
+    ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
+  }
+
   Future<List<Breakage>> getVehicleBreakageList({
     required String vehicleObjectId,
   }) async {
@@ -44,7 +90,7 @@ class BreakageApiClient {
     ApiResponseSuccessChecker.checkApiResponseSuccess(apiResponse);
 
     final List<Breakage> breakageList = [];
-    
+
     final apiResponseResults = apiResponse.results;
     if (apiResponseResults != null) {
       for (var element in apiResponseResults) {

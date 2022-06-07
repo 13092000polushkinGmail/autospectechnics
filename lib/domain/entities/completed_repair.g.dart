@@ -23,7 +23,7 @@ class CompletedRepairAdapter extends TypeAdapter<CompletedRepair> {
       description: fields[3] as String,
       date: fields[4] as DateTime,
       vehicleNode: fields[5] as String,
-      photosURL: (fields[6] as List).cast<String>(),
+      imagesIdUrl: (fields[6] as Map).cast<String, String>(),
       breakageObjectId: fields[7] as String,
     );
   }
@@ -45,7 +45,7 @@ class CompletedRepairAdapter extends TypeAdapter<CompletedRepair> {
       ..writeByte(5)
       ..write(obj.vehicleNode)
       ..writeByte(6)
-      ..write(obj.photosURL)
+      ..write(obj.imagesIdUrl)
       ..writeByte(7)
       ..write(obj.breakageObjectId);
   }

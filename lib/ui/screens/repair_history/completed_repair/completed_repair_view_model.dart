@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:autospectechnics/domain/entities/breakage.dart';
 import 'package:autospectechnics/domain/entities/completed_repair.dart';
 import 'package:autospectechnics/domain/exceptions/api_client_exception.dart';
@@ -6,24 +8,40 @@ import 'package:autospectechnics/domain/parse_database_string_names/vehicle_node
 import 'package:autospectechnics/domain/services/breakage_service.dart';
 import 'package:autospectechnics/domain/services/completed_repair_service.dart';
 import 'package:autospectechnics/resources/resources.dart';
+import 'package:autospectechnics/ui/global_widgets/confirm_dialog_widget.dart';
 import 'package:autospectechnics/ui/global_widgets/error_dialog_widget.dart';
+import 'package:autospectechnics/ui/navigation/arguments_configurations/completed_repair_arguments_configuration.dart';
+import 'package:autospectechnics/ui/navigation/main_navigation.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 class CompletedRepairViewModel extends ChangeNotifier {
-  final String _vehicleObjectId;
-  final String _completedRepairObjectId;
-  final _completedRepairService = CompletedRepairService();
+  late final _completedRepairService = CompletedRepairService(_vehicleObjectId);
   late final _breakageService = BreakageService(_vehicleObjectId);
+
   CompletedRepair? _completedRepair;
   Breakage? _breakage;
   bool isLoadingProgress = false;
 
+  final String _vehicleObjectId;
+  final String _completedRepairObjectId;
   CompletedRepairViewModel(
     this._vehicleObjectId,
     this._completedRepairObjectId,
     BuildContext context,
   ) {
     _getCompletedRepair(context);
+    subscribeToCompletedRepairBox(context);
+  }
+
+  Stream<BoxEvent>? completedRepairStream;
+  StreamSubscription<BoxEvent>? subscription;
+  Future<void> subscribeToCompletedRepairBox(BuildContext context) async {
+    completedRepairStream =
+        await _completedRepairService.getCompletedRepairStream();
+    subscription = completedRepairStream?.listen((event) {
+      _getCompletedRepair(context);
+    });
   }
 
   CompletedRepairWidgetConfiguration get completedRepairWidgetConfiguration =>
@@ -35,15 +53,19 @@ class CompletedRepairViewModel extends ChangeNotifier {
     isLoadingProgress = true;
     notifyListeners();
     try {
-      _completedRepair =
-          await _completedRepairService.geCompletedRepairFromHive(
-              _completedRepairObjectId, _vehicleObjectId);
+      _completedRepair = await _completedRepairService
+          .geCompletedRepairFromHive(_completedRepairObjectId);
 
-      final breakageObjectId = _completedRepair?.breakageObjectId;
+      if (_completedRepair == null) {
+        _breakage = null;
+        ErrorDialogWidget.showDataSyncingError(context);
+      } else {
+        final breakageObjectId = _completedRepair?.breakageObjectId;
 
-      if (breakageObjectId != null && breakageObjectId.isNotEmpty) {
-        _breakage =
-            await _breakageService.getBreakageFromHive(breakageObjectId);
+        if (breakageObjectId != null && breakageObjectId.isNotEmpty) {
+          _breakage =
+              await _breakageService.getBreakageFromHive(breakageObjectId);
+        }
       }
     } on ApiClientException catch (exception) {
       switch (exception.type) {
@@ -64,9 +86,50 @@ class CompletedRepairViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> onDeleteButtonTap(BuildContext context) async {
+    final isConfirmed = await ConfirmDialogWidget.isConfirmed(context: context);
+    if (!isConfirmed) return;
+    try {
+      final breakageObjectId = _breakage?.objectId;
+      if (breakageObjectId != null) {
+        await _breakageService.deleteBreakage(breakageObjectId);
+      }
+      await _completedRepairService
+          .deleteCompletedRepair(_completedRepairObjectId);
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
+    } on ApiClientException catch (exception) {
+      switch (exception.type) {
+        case ApiClientExceptionType.network:
+          ErrorDialogWidget.showConnectionError(context);
+          break;
+        case ApiClientExceptionType.emptyResponse:
+          ErrorDialogWidget.showEmptyResponseError(context);
+          break;
+        case ApiClientExceptionType.other:
+          ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+          break;
+      }
+    } catch (e) {
+      ErrorDialogWidget.showUnknownError(context);
+    }
+  }
+
+  void openUpdatingCompletedRepairScreen(BuildContext context) {
+    Navigator.of(context).pushNamed(
+      MainNavigationRouteNames.addingCompletedRepairScreen,
+      arguments: CompletedRepairArgumentsConfiguration(
+        vehicleObjectId: _vehicleObjectId,
+        completedRepairObjectId: _completedRepairObjectId,
+      ),
+    );
+  }
+
   @override
   Future<void> dispose() async {
     await _breakageService.dispose();
+    await _completedRepairService.dispose();
+    await subscription?.cancel();
     super.dispose();
   }
 }
@@ -89,7 +152,7 @@ class CompletedRepairWidgetConfiguration {
     final intMileage = completedRepair?.mileage;
     mileage = intMileage != null ? '${completedRepair?.mileage} км.' : '';
     description = completedRepair?.description ?? '';
-    photosURL = completedRepair?.photosURL ?? [];
+    photosURL = completedRepair?.imagesIdUrl.values.toList() ?? [];
   }
 }
 
@@ -114,7 +177,7 @@ class BreakageWidgetConfiguration {
       dangerLevelIconName = breakageDangerLevel.iconName;
       dangerLevel = 'Уровень: ${breakageDangerLevel.name}';
     }
-    photosURL = breakage?.photosURL ?? [];
+    photosURL = breakage?.imagesIdUrl.values.toList() ?? [];
     description = breakage?.description ?? '';
   }
 }

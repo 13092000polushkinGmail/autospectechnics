@@ -1,9 +1,10 @@
 import 'package:hive/hive.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
+
 part 'vehicle_building_object.g.dart';
 
 @HiveType(typeId: 5)
-class VehicleBuildingObject {
+class VehicleBuildingObject extends HiveObject {
   @HiveField(0)
   final String id;
   @HiveField(1)
@@ -11,7 +12,7 @@ class VehicleBuildingObject {
   @HiveField(2)
   final String vehicleId;
   @HiveField(3)
-  final int requiredEngineHours;
+  int requiredEngineHours;
   VehicleBuildingObject({
     required this.id,
     required this.buildingObjectId,
@@ -38,5 +39,32 @@ class VehicleBuildingObject {
       vehicleId: vehicleId,
       requiredEngineHours: requiredEngineHours,
     );
+  }
+
+  void updateVehicleBuildingObject(
+    int? requiredEngineHours,
+  ) {
+    if (requiredEngineHours != null) {
+      this.requiredEngineHours = requiredEngineHours;
+    }
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is VehicleBuildingObject &&
+        other.id == id &&
+        other.buildingObjectId == buildingObjectId &&
+        other.vehicleId == vehicleId &&
+        other.requiredEngineHours == requiredEngineHours;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        buildingObjectId.hashCode ^
+        vehicleId.hashCode ^
+        requiredEngineHours.hashCode;
   }
 }

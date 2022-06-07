@@ -38,16 +38,24 @@ class _BodyWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLoadingProgress =
         context.select((RepairHistoryViewModel vm) => vm.isLoadingProgress);
-    final completedRepairList =
-        context.select((RepairHistoryViewModel vm) => vm.completedRepairList);
+    final completedRepairListLength = context
+        .select((RepairHistoryViewModel vm) => vm.completedRepairListLength);
     return isLoadingProgress
         ? const Center(child: CircularProgressIndicator())
-        : ListView.separated(
-            itemCount: completedRepairList.length,
-            itemBuilder: (_, index) => _RepairCardWidget(index: index),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            padding: const EdgeInsets.all(16),
-          );
+        : completedRepairListLength == 0
+            ? Center(
+                child: Text(
+                  'Работы не проводились',
+                  style:
+                      AppTextStyles.regular16.copyWith(color: AppColors.black),
+                ),
+              )
+            : ListView.separated(
+                itemCount: completedRepairListLength,
+                itemBuilder: (_, index) => _RepairCardWidget(index: index),
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+              );
   }
 }
 
@@ -63,62 +71,64 @@ class _RepairCardWidget extends StatelessWidget {
     final model = context.read<RepairHistoryViewModel>();
     final configuration = context.select((RepairHistoryViewModel vm) =>
         vm.getCompletedRepairCardWidgetConfiguration(index));
-    return InkWell(
-      onTap: () => model.openCompletedRepairScreen(context, index),
-      child: DecoratedBox(
-        decoration: AppBoxDecorations.cardBoxDecoration,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              SvgPicture.asset(
-                configuration.vehicleNodeIconName,
-                height: 40,
-                width: 40,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return configuration != null
+        ? InkWell(
+            onTap: () => model.openCompletedRepairScreen(context, index),
+            child: DecoratedBox(
+              decoration: AppBoxDecorations.cardBoxDecoration,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    Text(
-                      configuration.title,
-                      style: AppTextStyles.regular16.copyWith(
-                        color: AppColors.black,
+                    SvgPicture.asset(
+                      configuration.vehicleNodeIconName,
+                      height: 40,
+                      width: 40,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            configuration.title,
+                            style: AppTextStyles.regular16.copyWith(
+                              color: AppColors.black,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  configuration.date,
+                                  style: AppTextStyles.hint.copyWith(
+                                    color: AppColors.greyText,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  configuration.mileage,
+                                  style: AppTextStyles.hint.copyWith(
+                                    color: AppColors.greyText,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            configuration.date,
-                            style: AppTextStyles.hint.copyWith(
-                              color: AppColors.greyText,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            configuration.mileage,
-                            style: AppTextStyles.hint.copyWith(
-                              color: AppColors.greyText,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right_rounded),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded),
-            ],
-          ),
-        ),
-      ),
-    );
+            ),
+          )
+        : const SizedBox.shrink();
   }
 }

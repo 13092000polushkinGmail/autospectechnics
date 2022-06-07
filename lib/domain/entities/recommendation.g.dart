@@ -22,7 +22,7 @@ class RecommendationAdapter extends TypeAdapter<Recommendation> {
       vehicleNode: fields[2] as String,
       description: fields[3] as String,
       isCompleted: fields[4] as bool,
-      photosURL: (fields[5] as List).cast<String>(),
+      imagesIdUrl: (fields[5] as Map).cast<String, String>(),
     );
   }
 
@@ -41,7 +41,7 @@ class RecommendationAdapter extends TypeAdapter<Recommendation> {
       ..writeByte(4)
       ..write(obj.isCompleted)
       ..writeByte(5)
-      ..write(obj.photosURL);
+      ..write(obj.imagesIdUrl);
   }
 
   @override

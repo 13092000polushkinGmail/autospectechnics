@@ -13,15 +13,17 @@ class RecommendationDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<RecommendationDetailsViewModel>();
     return Scaffold(
-      appBar: const AppBarWidget(
+      appBar: AppBarWidget(
         title: 'Рекомендации',
         hasBackButton: true,
+        onDeleteButtonTap: () => model.onDeleteButtonTap(context),
       ),
       body: const _BodyWidget(),
       floatingActionButton: FloatingButtonWidget(
         child: const Text('Редактировать'),
-        onPressed: () {},
+        onPressed: () => model.openUpdatingRecommendationScreen(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );

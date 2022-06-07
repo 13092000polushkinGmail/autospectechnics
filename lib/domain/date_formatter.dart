@@ -10,9 +10,9 @@ abstract class DateFormatter {
     return resultString;
   }
 
-  static DaysInfo getDaysInfo(DateTime? startDate, DateTime? finishDate) {
+  static DaysInfo? getDaysInfo(DateTime? startDate, DateTime? finishDate) {
     if (startDate == null || finishDate == null) {
-      return DaysInfo(daysText: '', daysAmount: '');
+      return null;
     }
     final _startDate = DateTime(startDate.year, startDate.month, startDate.day);
     final _finishDate =
