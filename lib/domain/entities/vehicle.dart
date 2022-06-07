@@ -72,7 +72,7 @@ class Vehicle extends HiveObject {
     );
   }
 
-  void updateVehicle(
+  void updateVehicle({
     String? model,
     int? mileage,
     int? vehicleType,
@@ -81,7 +81,8 @@ class Vehicle extends HiveObject {
     int? breakageDangerLevel,
     RoutineMaintenanceHoursInfo? hoursInfo,
     Map<String, String>? imageIdUrl,
-  ) {
+    required bool doResetRoutineMaintenanceInfo,
+  }) {
     if (model != null) {
       this.model = model;
     }
@@ -102,6 +103,9 @@ class Vehicle extends HiveObject {
     }
     if (hoursInfo != null) {
       this.hoursInfo = hoursInfo;
+    }
+    if (doResetRoutineMaintenanceInfo) {
+      this.hoursInfo = null;
     }
     if (imageIdUrl != null && imageIdUrl.isNotEmpty) {
       this.imageIdUrl.addAll(imageIdUrl);

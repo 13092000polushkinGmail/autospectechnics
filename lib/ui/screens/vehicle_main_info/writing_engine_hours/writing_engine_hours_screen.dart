@@ -79,7 +79,7 @@ class _BodyWidget extends StatelessWidget {
                   AppTextStyles.timeBig.copyWith(color: AppColors.greyText),
               selectedTextStyle:
                   AppTextStyles.timeBig.copyWith(color: AppColors.blue),
-              itemWidth: 56,
+              itemWidth: 72,
               decoration: const BoxDecoration(
                 border: Border(
                   top: BorderSide(

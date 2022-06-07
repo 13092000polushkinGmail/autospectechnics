@@ -62,7 +62,6 @@ class _BodyWidget extends StatelessWidget {
         TextFieldTemplateWidget(
           controller: model.licensePlateTextControler,
           hintText: 'Гос. номер',
-          keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 16),
         TextFieldTemplateWidget(
@@ -87,7 +86,7 @@ class _PhotoWidget extends StatelessWidget {
     return imageFromServerIdUrl.isEmpty
         ? pickedImage == null
             ? AddingPhotoWidget(
-                width: 328,
+                width: MediaQuery.of(context).size.width - 32,
                 height: 192,
                 onTap: () => model.pickImage(context: context),
               )

@@ -1,4 +1,5 @@
 import 'package:autospectechnics/domain/factories/screen_factory.dart';
+import 'package:autospectechnics/ui/navigation/arguments_configurations/adding_vehicle_arguments_configuration.dart';
 import 'package:autospectechnics/ui/navigation/arguments_configurations/breakage_details_arguments_configuration.dart';
 import 'package:autospectechnics/ui/navigation/arguments_configurations/completed_repair_arguments_configuration.dart';
 import 'package:autospectechnics/ui/navigation/arguments_configurations/recommendation_details_arguments_configuration.dart';
@@ -104,9 +105,17 @@ class MainNavigation {
         );
       case MainNavigationRouteNames.addingVehicleScreen:
         final arguments = settings.arguments;
-        final vehicleObjectId = arguments is String ? arguments : '';
+        String vehicleObjectId = '';
+        int pageNumber = 0;
+        if (arguments is AddingVehicleArgumentsConfiguration) {
+          vehicleObjectId = arguments.vehicleObjectId;
+          pageNumber = arguments.pageIndex;
+        } else {
+          vehicleObjectId = arguments is String ? arguments : '';
+        }
         return MaterialPageRoute(
-          builder: (_) => _screenFactory.makeAddingVehicle(vehicleObjectId),
+          builder: (_) =>
+              _screenFactory.makeAddingVehicle(vehicleObjectId, pageNumber),
         );
       case MainNavigationRouteNames.vehicleInformationScreen:
         final arguments = settings.arguments;

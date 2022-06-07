@@ -15,9 +15,10 @@ class VehicleMainInfoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.read<VehicleMainInfoViewModel>();
+    final vehicleName = context.select((VehicleMainInfoViewModel vm) => vm.vehicleName);
     return Scaffold(
       appBar: AppBarWidget(
-        title: 'Авто',
+        title: vehicleName,
         hasBackButton: true,
         onDeleteButtonTap: () => model.onDeleteButtonTap(context),
       ),

@@ -1,3 +1,4 @@
+import 'package:autospectechnics/ui/global_widgets/floating_button_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -13,12 +14,18 @@ class RoutineMaintenanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      appBar: AppBarWidget(
+    final model = context.read<RoutineMaintenanceViewModel>();
+    return Scaffold(
+      appBar: const AppBarWidget(
         title: 'ТО',
         hasBackButton: true,
       ),
       body: _BodyWidget(),
+      floatingActionButton: FloatingButtonWidget(
+        child: const Text('Редактировать'),
+        onPressed: () => model.openAddingVehicleScreen(context),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

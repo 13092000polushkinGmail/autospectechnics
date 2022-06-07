@@ -51,6 +51,8 @@ class VehicleMainInfoViewModel extends ChangeNotifier {
   Stream<BoxEvent>? vehicleStream;
   StreamSubscription<BoxEvent>? vehicleSubscription;
 
+  String get vehicleName => _vehicle?.model ?? 'Авто';
+
   Future<void> subscribeToBoxes(BuildContext context) async {
     vehicleStream = await _vehicleService.getVehicleStream();
     vehicleSubscription = vehicleStream?.listen((event) {

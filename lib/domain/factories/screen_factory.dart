@@ -43,9 +43,10 @@ class ScreenFactory {
     );
   }
 
-  Widget makeAddingVehicle(String vehicleId) {
+  Widget makeAddingVehicle(String vehicleId, int pageNumber) {
     return ChangeNotifierProvider(
-      create: (context) => AddingVehicleViewModel(vehicleId, context),
+      create: (context) =>
+          AddingVehicleViewModel(vehicleId, pageNumber, context),
       child: const AddingVehicleScreen(),
     );
   }

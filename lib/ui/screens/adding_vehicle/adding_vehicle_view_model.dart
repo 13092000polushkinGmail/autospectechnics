@@ -28,6 +28,7 @@ class AddingVehicleViewModel extends ChangeNotifier {
   int _maxPickedTabIndex = 0;
   int selectedVehicleTypeIndex = -1;
   final List<RoutineMaintenanceInfo> _routineMaintenances = [];
+  final List<String> _routineMaintenancesIdToDelete = [];
 
   Map<String, String> imageFromServerIdURL = {};
   List<String> imageIDToDelete = [];
@@ -36,6 +37,7 @@ class AddingVehicleViewModel extends ChangeNotifier {
 
   AddingVehicleViewModel(
     this._vehicleId,
+    this._currentTabIndex,
     BuildContext context,
   ) {
     if (_vehicleId != '') {
@@ -122,6 +124,34 @@ class AddingVehicleViewModel extends ChangeNotifier {
         context,
         'Произошла ошибка при выборе изображения, пожалуйста, повторите попытку',
       );
+    }
+  }
+
+  void deleteRoutineMaintenance({
+    required BuildContext context,
+    required int index,
+  }) {
+    try {
+      final objectId = _routineMaintenances[index].objectId;
+      if (objectId != null) {
+        _routineMaintenancesIdToDelete.add(objectId);
+      }
+      _routineMaintenances.removeAt(index);
+      notifyListeners();
+    } on ApiClientException catch (exception) {
+      switch (exception.type) {
+        case ApiClientExceptionType.network:
+          ErrorDialogWidget.showConnectionError(context);
+          break;
+        case ApiClientExceptionType.emptyResponse:
+          ErrorDialogWidget.showEmptyResponseError(context);
+          break;
+        case ApiClientExceptionType.other:
+          ErrorDialogWidget.showErrorWithMessage(context, exception.message);
+          break;
+      }
+    } catch (e) {
+      ErrorDialogWidget.showUnknownError(context);
     }
   }
 
@@ -306,6 +336,9 @@ class AddingVehicleViewModel extends ChangeNotifier {
       }
       if (vehicleId != null) {
         final routineMaintenanceService = RoutineMaintenanceService(vehicleId);
+        for (var objectId in _routineMaintenancesIdToDelete) {
+          await _routineMaintenanceService.deleteRoutineMaintenance(objectId);
+        }
         for (var routineMaintenanceInfo in _routineMaintenances) {
           if (routineMaintenanceInfo.isSaved) {
             if (routineMaintenanceInfo.isNew) {
@@ -337,8 +370,15 @@ class AddingVehicleViewModel extends ChangeNotifier {
         final vehicle = await _vehicleService.getVehicleFromHive(
             vehicleObjectId: vehicleId);
         if (hoursInfo != vehicle?.hoursInfo) {
+          bool doResetHoursInfo = false;
+          if (hoursInfo == null) {
+            doResetHoursInfo = true;
+          }
           await _vehicleService.updateVehicle(
-              vehicleId: vehicleId, hoursInfo: hoursInfo);
+            vehicleId: vehicleId,
+            hoursInfo: hoursInfo,
+            doResetRoutineMaintenanceInfo: doResetHoursInfo,
+          );
         }
         routineMaintenanceService.dispose();
       }

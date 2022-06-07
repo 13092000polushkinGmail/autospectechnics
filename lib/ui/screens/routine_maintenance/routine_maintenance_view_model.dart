@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:autospectechnics/domain/services/vehicle_service.dart';
+import 'package:autospectechnics/ui/navigation/arguments_configurations/adding_vehicle_arguments_configuration.dart';
+import 'package:autospectechnics/ui/navigation/main_navigation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -108,6 +110,16 @@ class RoutineMaintenanceViewModel extends ChangeNotifier {
     }
     isDataLoading = false;
     notifyListeners();
+  }
+
+  void openAddingVehicleScreen(BuildContext context) {
+    Navigator.of(context).pushNamed(
+      MainNavigationRouteNames.addingVehicleScreen,
+      arguments: AddingVehicleArgumentsConfiguration(
+        vehicleObjectId: _vehicleObjectId,
+        pageIndex: 2,
+      ),
+    );
   }
 
   Future<void> resetEngineHoursValue({

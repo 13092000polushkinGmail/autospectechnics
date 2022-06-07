@@ -40,20 +40,22 @@ class VehicleDataProvider {
     int? breakageDangerLevel,
     RoutineMaintenanceHoursInfo? hoursInfo,
     Map<String, String>? imageIdUrl,
+    bool doResetRoutineMaintenanceInfo = false,
   }) async {
     final box = await _futureBox;
     final vehicle = box.get(vehicleId);
     if (vehicle != null) {
       final oldVehicle = vehicle.copyWith();
       vehicle.updateVehicle(
-        model,
-        mileage,
-        vehicleType,
-        licensePlate,
-        description,
-        breakageDangerLevel,
-        hoursInfo,
-        imageIdUrl,
+        model: model,
+        mileage: mileage,
+        vehicleType: vehicleType,
+        licensePlate: licensePlate,
+        description: description,
+        breakageDangerLevel: breakageDangerLevel,
+        hoursInfo: hoursInfo,
+        imageIdUrl: imageIdUrl,
+        doResetRoutineMaintenanceInfo: doResetRoutineMaintenanceInfo,
       );
       if (vehicle != oldVehicle) {
         await vehicle.save();

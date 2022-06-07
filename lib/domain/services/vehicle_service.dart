@@ -103,6 +103,7 @@ class VehicleService {
     int? breakageDangerLevel,
     RoutineMaintenanceHoursInfo? hoursInfo,
     XFile? image,
+    bool doResetRoutineMaintenanceInfo = false,
   }) async {
     final vehicleObjectId = await _vehicleApiClient.updateVehicle(
       objectId: vehicleId,
@@ -123,15 +124,17 @@ class VehicleService {
         );
       }
       await _vehicleDataProvider.updateVehicleInHive(
-          vehicleId: vehicleId,
-          model: model,
-          mileage: mileage,
-          vehicleType: vehicleType,
-          licensePlate: licensePlate,
-          description: description,
-          breakageDangerLevel: breakageDangerLevel,
-          hoursInfo: hoursInfo,
-          imageIdUrl: savedImagesIdUrl);
+        vehicleId: vehicleId,
+        model: model,
+        mileage: mileage,
+        vehicleType: vehicleType,
+        licensePlate: licensePlate,
+        description: description,
+        breakageDangerLevel: breakageDangerLevel,
+        hoursInfo: hoursInfo,
+        imageIdUrl: savedImagesIdUrl,
+        doResetRoutineMaintenanceInfo: doResetRoutineMaintenanceInfo,
+      );
     }
   }
 

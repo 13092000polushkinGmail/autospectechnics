@@ -157,14 +157,24 @@ class _RoutineMaintenanceWidgetState extends State<_RoutineMaintenanceWidget>
                           },
                           hintText: 'Периодичность, м.ч.',
                         ),
-                        TextButton(
-                          onPressed: () {
-                            if (model.trySaveRoutineMaintenance(
-                                context: context, index: widget.index)) {
-                              _toggleContainer();
-                            }
-                          },
-                          child: const Text('ОК'),
+                        Row(
+                          children: [
+                            TextButton(
+                              onPressed: () => model.deleteRoutineMaintenance(
+                                  context: context, index: widget.index),
+                              child: const Text('Удалить'),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () {
+                                if (model.trySaveRoutineMaintenance(
+                                    context: context, index: widget.index)) {
+                                  _toggleContainer();
+                                }
+                              },
+                              child: const Text('ОК'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
